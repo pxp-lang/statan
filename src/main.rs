@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+mod cmd;
+
 #[derive(Debug, Parser)]
 struct Arguments {
     #[clap(subcommand)]
@@ -9,12 +11,19 @@ struct Arguments {
 #[derive(Debug, Subcommand)]
 enum Command {
     #[clap(about = "Analyse a file.")]
-    Analyse {
-        #[clap(help = "The file to analyse.")]
-        file: String,
-    },
+    Analyse(AnalyseCommand)
+}
+
+#[derive(Debug, Parser)]
+pub struct AnalyseCommand {
+    #[clap(help = "The file to analyse.")]
+    file: String,
 }
 
 fn main() {
     let arguments = Arguments::parse();
+
+    match arguments.command {
+        Command::Analyse(args) => cmd::analyse::run(args),
+    }
 }
