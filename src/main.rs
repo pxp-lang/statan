@@ -9,7 +9,10 @@ struct Arguments {
 #[derive(Debug, Subcommand)]
 enum Command {
     #[clap(about = "Analyse a file.")]
-    Analyse,
+    Analyse {
+        #[clap(help = "The file to analyse.")]
+        file: String,
+    },
 }
 
 fn main() {
