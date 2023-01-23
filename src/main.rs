@@ -11,7 +11,7 @@ struct Arguments {
 #[derive(Debug, Subcommand)]
 enum Command {
     #[clap(about = "Analyse a file.")]
-    Analyse(AnalyseCommand)
+    Analyse(AnalyseCommand),
 }
 
 #[derive(Debug, Parser)]

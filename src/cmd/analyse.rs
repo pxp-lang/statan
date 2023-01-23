@@ -1,5 +1,3 @@
 use crate::AnalyseCommand;
 
-pub fn run(command: AnalyseCommand) {
-    
-}
+pub fn run(command: AnalyseCommand) {}
