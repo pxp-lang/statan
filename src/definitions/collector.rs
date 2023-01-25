@@ -1,5 +1,3 @@
-use std::io::{BufRead};
-
 use pxp_parser::{
     downcast::{downcast},
     lexer::byte_string::ByteString,
@@ -62,7 +60,7 @@ impl DefinitionCollector {
         // given identifier. If it does, we can assume you're referencing either
         // an imported namespace or class that has been imported.
         for imported_name in self.imported_names.iter() {
-            if imported_name.ends_with(&first_part) {
+            if imported_name.ends_with(first_part) {
                 let mut qualified_name = imported_name.clone();
                 qualified_name.extend(&name.bytes[first_part.len()..]);
 
@@ -89,26 +87,23 @@ impl DefinitionCollector {
     }
 
     fn map_type(&self, data_type: Option<&ParsedType>) -> Option<Type> {
-        match data_type {
-            Some(t) => Some(match t {
-                ParsedType::Named(_, name) => Type::Named(self.resolve_name(name)),
-                ParsedType::Float(_) => Type::Float,
-                ParsedType::Boolean(_) => Type::Bool,
-                ParsedType::Integer(_) => Type::Int,
-                ParsedType::String(_) => Type::String,
-                ParsedType::Array(_) => Type::Array,
-                ParsedType::Mixed(_) => Type::Mixed,
-                _ => todo!(),
-            }),
-            None => None,
-        }
+        data_type.map(|t| match t {
+            ParsedType::Named(_, name) => Type::Named(self.resolve_name(name)),
+            ParsedType::Float(_) => Type::Float,
+            ParsedType::Boolean(_) => Type::Bool,
+            ParsedType::Integer(_) => Type::Int,
+            ParsedType::String(_) => Type::String,
+            ParsedType::Array(_) => Type::Array,
+            ParsedType::Mixed(_) => Type::Mixed,
+            _ => todo!(),
+        })
     }
 
     pub fn collect(&self) -> DefinitionCollection {
         self.collection.clone()
     }
 
-    pub fn scan(&mut self, ast: &mut Vec<Statement>) {
+    pub fn scan(&mut self, ast: &mut [Statement]) {
         self.current_namespace = ByteString::default();
         self.imported_names = Vec::new();
 
@@ -204,11 +199,7 @@ impl Visitor<()> for DefinitionCollector {
                 .collect::<Vec<Modifier>>();
             let name = self.qualify_name(&name.value);
 
-            let extends = if let Some(extends) = extends {
-                Some(self.resolve_name(&extends.parent.value))
-            } else {
-                None
-            };
+            let extends = extends.as_ref().map(|extends| self.resolve_name(&extends.parent.value));
 
             let implements = if let Some(implements) = implements {
                 implements
@@ -228,13 +219,12 @@ impl Visitor<()> for DefinitionCollector {
                     ClassMember::TraitUsage(usage) => Some(usage),
                     _ => None,
                 })
-                .map(|m| {
+                .flat_map(|m| {
                     m.traits
                         .iter()
                         .map(|i| self.resolve_name(&i.value))
                         .collect::<Vec<ByteString>>()
                 })
-                .flatten()
                 .collect::<Vec<ByteString>>();
 
             let constants = body
@@ -244,7 +234,7 @@ impl Visitor<()> for DefinitionCollector {
                     ClassMember::Constant(constant) => Some(constant),
                     _ => None,
                 })
-                .map(|m| {
+                .flat_map(|m| {
                     m.entries
                         .iter()
                         .map(|e| ConstantDefinition {
@@ -254,7 +244,6 @@ impl Visitor<()> for DefinitionCollector {
                         })
                         .collect::<Vec<ConstantDefinition>>()
                 })
-                .flatten()
                 .collect::<Vec<ConstantDefinition>>();
 
             let mut properties = body
@@ -264,7 +253,7 @@ impl Visitor<()> for DefinitionCollector {
                     ClassMember::Property(property) => Some(property),
                     _ => None,
                 })
-                .map(|p| {
+                .flat_map(|p| {
                     p.entries
                         .iter()
                         .map(|e| PropertyDefinition {
@@ -281,7 +270,6 @@ impl Visitor<()> for DefinitionCollector {
                         })
                         .collect::<Vec<PropertyDefinition>>()
                 })
-                .flatten()
                 .collect::<Vec<PropertyDefinition>>();
 
             properties.extend(
@@ -291,7 +279,7 @@ impl Visitor<()> for DefinitionCollector {
                         ClassMember::VariableProperty(property) => Some(property),
                         _ => None,
                     })
-                    .map(|p| {
+                    .flat_map(|p| {
                         p.entries
                             .iter()
                             .map(|e| PropertyDefinition {
@@ -302,7 +290,6 @@ impl Visitor<()> for DefinitionCollector {
                             })
                             .collect::<Vec<PropertyDefinition>>()
                     })
-                    .flatten()
                     .collect::<Vec<PropertyDefinition>>(),
             );
 
@@ -432,7 +419,7 @@ impl Visitor<()> for DefinitionCollector {
                     InterfaceMember::Constant(constant) => Some(constant),
                     _ => None,
                 })
-                .map(|m| {
+                .flat_map(|m| {
                     m.entries
                         .iter()
                         .map(|e| ConstantDefinition {
@@ -442,7 +429,6 @@ impl Visitor<()> for DefinitionCollector {
                         })
                         .collect::<Vec<ConstantDefinition>>()
                 })
-                .flatten()
                 .collect::<Vec<ConstantDefinition>>();
             let methods = body
                 .members
@@ -504,13 +490,12 @@ impl Visitor<()> for DefinitionCollector {
                     TraitMember::TraitUsage(usage) => Some(usage),
                     _ => None,
                 })
-                .map(|m| {
+                .flat_map(|m| {
                     m.traits
                         .iter()
                         .map(|i| self.resolve_name(&i.value))
                         .collect::<Vec<ByteString>>()
                 })
-                .flatten()
                 .collect::<Vec<ByteString>>();
 
             let constants = body
@@ -520,7 +505,7 @@ impl Visitor<()> for DefinitionCollector {
                     TraitMember::Constant(constant) => Some(constant),
                     _ => None,
                 })
-                .map(|m| {
+                .flat_map(|m| {
                     m.entries
                         .iter()
                         .map(|e| ConstantDefinition {
@@ -530,7 +515,6 @@ impl Visitor<()> for DefinitionCollector {
                         })
                         .collect::<Vec<ConstantDefinition>>()
                 })
-                .flatten()
                 .collect::<Vec<ConstantDefinition>>();
 
             let mut properties = body
@@ -540,7 +524,7 @@ impl Visitor<()> for DefinitionCollector {
                     TraitMember::Property(property) => Some(property),
                     _ => None,
                 })
-                .map(|p| {
+                .flat_map(|p| {
                     p.entries
                         .iter()
                         .map(|e| PropertyDefinition {
@@ -557,7 +541,6 @@ impl Visitor<()> for DefinitionCollector {
                         })
                         .collect::<Vec<PropertyDefinition>>()
                 })
-                .flatten()
                 .collect::<Vec<PropertyDefinition>>();
 
             properties.extend(
@@ -567,7 +550,7 @@ impl Visitor<()> for DefinitionCollector {
                         TraitMember::VariableProperty(property) => Some(property),
                         _ => None,
                     })
-                    .map(|p| {
+                    .flat_map(|p| {
                         p.entries
                             .iter()
                             .map(|e| PropertyDefinition {
@@ -578,7 +561,6 @@ impl Visitor<()> for DefinitionCollector {
                             })
                             .collect::<Vec<PropertyDefinition>>()
                     })
-                    .flatten()
                     .collect::<Vec<PropertyDefinition>>(),
             );
 
@@ -700,7 +682,7 @@ impl Visitor<()> for DefinitionCollector {
                     UnitEnumMember::Constant(constant) => Some(constant),
                     _ => None,
                 })
-                .map(|m| {
+                .flat_map(|m| {
                     m.entries
                         .iter()
                         .map(|e| ConstantDefinition {
@@ -710,7 +692,6 @@ impl Visitor<()> for DefinitionCollector {
                         })
                         .collect::<Vec<ConstantDefinition>>()
                 })
-                .flatten()
                 .collect::<Vec<ConstantDefinition>>();
 
             let methods = body
@@ -796,7 +777,7 @@ impl Visitor<()> for DefinitionCollector {
                     BackedEnumMember::Constant(constant) => Some(constant),
                     _ => None,
                 })
-                .map(|m| {
+                .flat_map(|m| {
                     m.entries
                         .iter()
                         .map(|e| ConstantDefinition {
@@ -806,7 +787,6 @@ impl Visitor<()> for DefinitionCollector {
                         })
                         .collect::<Vec<ConstantDefinition>>()
                 })
-                .flatten()
                 .collect::<Vec<ConstantDefinition>>();
 
             let methods = body
@@ -872,5 +852,11 @@ impl Visitor<()> for DefinitionCollector {
         }
 
         Ok(())
+    }
+}
+
+impl Default for DefinitionCollector {
+    fn default() -> Self {
+        Self::new()
     }
 }
