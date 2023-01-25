@@ -1,6 +1,6 @@
 use pxp_parser::lexer::byte_string::ByteString;
 
-use crate::shared::{types::Type, visibility::Visibility, modifier::Modifier};
+use crate::shared::{modifier::Modifier, types::Type, visibility::Visibility};
 
 use super::parameter::Parameter;
 

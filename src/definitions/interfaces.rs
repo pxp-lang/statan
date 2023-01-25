@@ -1,6 +1,6 @@
 use pxp_parser::lexer::byte_string::ByteString;
 
-use super::{functions::MethodDefinition, constants::ConstantDefinition};
+use super::{constants::ConstantDefinition, functions::MethodDefinition};
 
 #[derive(Debug, Clone)]
 pub struct InterfaceDefinition {

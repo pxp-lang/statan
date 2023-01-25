@@ -9,7 +9,7 @@ pub fn run(_: AnalyseCommand) {
     for file in files {
         let contents = std::fs::read(&file).unwrap();
         let mut ast = pxp_parser::parse(&contents).unwrap();
-        
+
         collector.scan(&mut ast);
     }
 

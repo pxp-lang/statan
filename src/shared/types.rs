@@ -7,6 +7,6 @@ pub enum Type {
     Float,
     Array,
     Mixed,
-    Bool,   
+    Bool,
     Named(ByteString),
 }

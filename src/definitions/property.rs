@@ -1,6 +1,6 @@
 use pxp_parser::lexer::byte_string::ByteString;
 
-use crate::shared::{visibility::Visibility, modifier::Modifier, types::Type};
+use crate::shared::{modifier::Modifier, types::Type, visibility::Visibility};
 
 #[derive(Debug, Clone)]
 pub struct PropertyDefinition {

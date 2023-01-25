@@ -1,6 +1,6 @@
 use pxp_parser::{lexer::byte_string::ByteString, parser::ast::enums::BackedEnumType};
 
-use super::{functions::MethodDefinition, constants::ConstantDefinition};
+use super::{constants::ConstantDefinition, functions::MethodDefinition};
 
 #[derive(Debug, Clone)]
 pub struct EnumDefinition {

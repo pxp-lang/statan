@@ -1,7 +1,9 @@
-use pxp_parser::lexer::byte_string::ByteString;
 use crate::shared::modifier::Modifier;
+use pxp_parser::lexer::byte_string::ByteString;
 
-use super::{property::PropertyDefinition, functions::MethodDefinition, constants::ConstantDefinition};
+use super::{
+    constants::ConstantDefinition, functions::MethodDefinition, property::PropertyDefinition,
+};
 
 #[derive(Debug, Clone)]
 pub struct TraitDefinition {

@@ -1,10 +1,38 @@
 use std::io::{BufRead, Bytes};
 
-use pxp_parser::{lexer::byte_string::ByteString, parser::ast::{Statement, namespaces::{BracedNamespace, UnbracedNamespace}, identifiers::SimpleIdentifier, GroupUseStatement, UseStatement, Use, functions::{FunctionStatement, ReturnType}, data_type::Type as ParsedType, classes::{ClassStatement, ClassMember}, properties::Property, interfaces::{InterfaceStatement, InterfaceMember}, modifiers::MethodModifier, traits::{TraitStatement, TraitMember}, enums::{UnitEnumStatement, UnitEnumMember, BackedEnumStatement, BackedEnumMember}}, traverser::Visitor, node::Node, downcast::{self, downcast}};
+use pxp_parser::{
+    downcast::{self, downcast},
+    lexer::byte_string::ByteString,
+    node::Node,
+    parser::ast::{
+        classes::{ClassMember, ClassStatement},
+        data_type::Type as ParsedType,
+        enums::{BackedEnumMember, BackedEnumStatement, UnitEnumMember, UnitEnumStatement},
+        functions::{FunctionStatement, ReturnType},
+        identifiers::SimpleIdentifier,
+        interfaces::{InterfaceMember, InterfaceStatement},
+        modifiers::MethodModifier,
+        namespaces::{BracedNamespace, UnbracedNamespace},
+        properties::Property,
+        traits::{TraitMember, TraitStatement},
+        GroupUseStatement, Statement, Use, UseStatement,
+    },
+    traverser::Visitor,
+};
 
-use crate::shared::{types::Type, modifier::Modifier, visibility::Visibility};
+use crate::shared::{modifier::Modifier, types::Type, visibility::Visibility};
 
-use super::{collection::DefinitionCollection, parameter::Parameter, functions::{FunctionDefinition, MethodDefinition}, classes::ClassDefinition, constants::ConstantDefinition, property::PropertyDefinition, interfaces::InterfaceDefinition, traits::TraitDefinition, enums::EnumDefinition};
+use super::{
+    classes::ClassDefinition,
+    collection::DefinitionCollection,
+    constants::ConstantDefinition,
+    enums::EnumDefinition,
+    functions::{FunctionDefinition, MethodDefinition},
+    interfaces::InterfaceDefinition,
+    parameter::Parameter,
+    property::PropertyDefinition,
+    traits::TraitDefinition,
+};
 
 #[derive(Debug)]
 pub struct DefinitionCollector {
@@ -93,13 +121,21 @@ impl DefinitionCollector {
 
 impl Visitor<()> for DefinitionCollector {
     fn visit(&mut self, node: &mut dyn Node) -> Result<(), ()> {
-        if let Some(BracedNamespace { name: Some(SimpleIdentifier { value, .. }), .. }) = downcast::<BracedNamespace>(node) {
+        if let Some(BracedNamespace {
+            name: Some(SimpleIdentifier { value, .. }),
+            ..
+        }) = downcast::<BracedNamespace>(node)
+        {
             let mut namespace = ByteString::from(b"\\");
             namespace.extend(&value.bytes);
             self.current_namespace = namespace;
         }
-        
-        if let Some(UnbracedNamespace { name: SimpleIdentifier { value, .. }, .. }) = downcast::<UnbracedNamespace>(node) {
+
+        if let Some(UnbracedNamespace {
+            name: SimpleIdentifier { value, .. },
+            ..
+        }) = downcast::<UnbracedNamespace>(node)
+        {
             let mut namespace = ByteString::from(b"\\");
             namespace.extend(&value.bytes);
             self.current_namespace = namespace;
@@ -123,145 +159,241 @@ impl Visitor<()> for DefinitionCollector {
             }
         }
 
-        if let Some(FunctionStatement { name, parameters, return_type, .. }) = downcast::<FunctionStatement>(node) {
+        if let Some(FunctionStatement {
+            name,
+            parameters,
+            return_type,
+            ..
+        }) = downcast::<FunctionStatement>(node)
+        {
             let name = self.qualify_name(&name.value);
-            let parameters = parameters.parameters.inner.iter().map(|p| {
-                Parameter {
+            let parameters = parameters
+                .parameters
+                .inner
+                .iter()
+                .map(|p| Parameter {
                     name: p.name.name.clone(),
                     type_: self.map_type(p.data_type.as_ref()),
-                }
-            }).collect::<Vec<Parameter>>();
+                })
+                .collect::<Vec<Parameter>>();
             let return_type = if let Some(ReturnType { data_type, .. }) = return_type {
                 self.map_type(Some(data_type))
             } else {
                 None
             };
 
-            self.collection.add_function(FunctionDefinition { name, parameters, return_type })
+            self.collection.add_function(FunctionDefinition {
+                name,
+                parameters,
+                return_type,
+            })
         }
 
-        if let Some(ClassStatement { modifiers, name, extends, implements, body, .. }) = downcast::<ClassStatement>(node) {
-            let modifiers = modifiers.modifiers.iter().map(|m| m.clone().into()).collect::<Vec<Modifier>>();
+        if let Some(ClassStatement {
+            modifiers,
+            name,
+            extends,
+            implements,
+            body,
+            ..
+        }) = downcast::<ClassStatement>(node)
+        {
+            let modifiers = modifiers
+                .modifiers
+                .iter()
+                .map(|m| m.clone().into())
+                .collect::<Vec<Modifier>>();
             let name = self.qualify_name(&name.value);
-            
+
             let extends = if let Some(extends) = extends {
                 Some(self.resolve_name(&extends.parent.value))
             } else {
                 None
             };
-            
+
             let implements = if let Some(implements) = implements {
-                implements.interfaces.inner.iter().map(|i| self.resolve_name(&i.value)).collect::<Vec<ByteString>>()
+                implements
+                    .interfaces
+                    .inner
+                    .iter()
+                    .map(|i| self.resolve_name(&i.value))
+                    .collect::<Vec<ByteString>>()
             } else {
                 Vec::new()
             };
 
-            let uses = body.members.iter()
+            let uses = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     ClassMember::TraitUsage(usage) => Some(usage),
-                    _ => None
+                    _ => None,
                 })
-                .map(|m| m.traits.iter().map(|i| self.resolve_name(&i.value)).collect::<Vec<ByteString>>())
+                .map(|m| {
+                    m.traits
+                        .iter()
+                        .map(|i| self.resolve_name(&i.value))
+                        .collect::<Vec<ByteString>>()
+                })
                 .flatten()
                 .collect::<Vec<ByteString>>();
 
-            let constants = body.members.iter()
+            let constants = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     ClassMember::Constant(constant) => Some(constant),
-                    _ => None
+                    _ => None,
                 })
-                .map(|m| m.entries.iter().map(|e| ConstantDefinition {
-                    name: e.name.value.clone(),
-                    visibility: m.modifiers.visibility().into(),
-                    final_: m.modifiers.has_final(),
-                }).collect::<Vec<ConstantDefinition>>())
+                .map(|m| {
+                    m.entries
+                        .iter()
+                        .map(|e| ConstantDefinition {
+                            name: e.name.value.clone(),
+                            visibility: m.modifiers.visibility().into(),
+                            final_: m.modifiers.has_final(),
+                        })
+                        .collect::<Vec<ConstantDefinition>>()
+                })
                 .flatten()
                 .collect::<Vec<ConstantDefinition>>();
-                
-            let mut properties = body.members.iter()
+
+            let mut properties = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     ClassMember::Property(property) => Some(property),
-                    _ => None
+                    _ => None,
                 })
-                .map(|p| p.entries.iter().map(|e| PropertyDefinition {
-                    name: e.variable().name.clone(),
-                    visibility: p.modifiers.visibility().into(),
-                    modifier: if p.modifiers.has_readonly() {
-                        Some(Modifier::Readonly)
-                    } else if p.modifiers.has_static() {
-                        Some(Modifier::Static)
-                    } else {
-                        None
-                    },
-                    type_: self.map_type(p.r#type.as_ref()),
-                }).collect::<Vec<PropertyDefinition>>())
+                .map(|p| {
+                    p.entries
+                        .iter()
+                        .map(|e| PropertyDefinition {
+                            name: e.variable().name.clone(),
+                            visibility: p.modifiers.visibility().into(),
+                            modifier: if p.modifiers.has_readonly() {
+                                Some(Modifier::Readonly)
+                            } else if p.modifiers.has_static() {
+                                Some(Modifier::Static)
+                            } else {
+                                None
+                            },
+                            type_: self.map_type(p.r#type.as_ref()),
+                        })
+                        .collect::<Vec<PropertyDefinition>>()
+                })
                 .flatten()
                 .collect::<Vec<PropertyDefinition>>();
 
             properties.extend(
-                    body.members.iter()
-                        .filter_map(|m| match m {
-                            ClassMember::VariableProperty(property) => Some(property),
-                            _ => None
-                        })
-                        .map(|p| p.entries.iter().map(|e| PropertyDefinition {
-                            name: e.variable().name.clone(),
-                            visibility: Visibility::Public,
-                            modifier: None,
-                            type_: self.map_type(p.r#type.as_ref()),
-                        }).collect::<Vec<PropertyDefinition>>())
-                        .flatten()
-                        .collect::<Vec<PropertyDefinition>>()
-                );
+                body.members
+                    .iter()
+                    .filter_map(|m| match m {
+                        ClassMember::VariableProperty(property) => Some(property),
+                        _ => None,
+                    })
+                    .map(|p| {
+                        p.entries
+                            .iter()
+                            .map(|e| PropertyDefinition {
+                                name: e.variable().name.clone(),
+                                visibility: Visibility::Public,
+                                modifier: None,
+                                type_: self.map_type(p.r#type.as_ref()),
+                            })
+                            .collect::<Vec<PropertyDefinition>>()
+                    })
+                    .flatten()
+                    .collect::<Vec<PropertyDefinition>>(),
+            );
 
             // TODO: Also add constructors to the method list.
             //       Ensure that any promoted properties from the constructor
             //       are also added to properties above. It might be easier to
             //       do this in a procedural loop.
-            let mut methods = body.members.iter()
+            let mut methods = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     ClassMember::ConcreteMethod(method) => Some(method),
-                    _ => None
+                    _ => None,
                 })
                 .map(|m| MethodDefinition {
                     name: m.name.value.clone(),
                     visibility: m.modifiers.visibility().into(),
-                    modifiers: m.modifiers.modifiers.iter().filter(|m| ! matches!(m, MethodModifier::Public(_) | MethodModifier::Protected(_) | MethodModifier::Private(_))).map(|m| m.clone().into()).collect::<Vec<Modifier>>(),
-                    parameters: m.parameters.parameters.inner.iter().map(|p| {
-                        Parameter {
+                    modifiers: m
+                        .modifiers
+                        .modifiers
+                        .iter()
+                        .filter(|m| {
+                            !matches!(
+                                m,
+                                MethodModifier::Public(_)
+                                    | MethodModifier::Protected(_)
+                                    | MethodModifier::Private(_)
+                            )
+                        })
+                        .map(|m| m.clone().into())
+                        .collect::<Vec<Modifier>>(),
+                    parameters: m
+                        .parameters
+                        .parameters
+                        .inner
+                        .iter()
+                        .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
-                        }
-                    }).collect::<Vec<Parameter>>(),
+                        })
+                        .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
                         self.map_type(Some(&return_type.data_type))
                     } else {
                         None
                     },
-                }).collect::<Vec<MethodDefinition>>();
+                })
+                .collect::<Vec<MethodDefinition>>();
 
             methods.extend(
-                body.members.iter()
-                .filter_map(|m| match m {
-                    ClassMember::AbstractMethod(method) => Some(method),
-                    _ => None
-                })
-                .map(|m| MethodDefinition {
-                    name: m.name.value.clone(),
-                    visibility: m.modifiers.visibility().into(),
-                    modifiers: m.modifiers.modifiers.iter().filter(|m| ! matches!(m, MethodModifier::Public(_) | MethodModifier::Protected(_) | MethodModifier::Private(_))).map(|m| m.clone().into()).collect::<Vec<Modifier>>(),
-                    parameters: m.parameters.parameters.inner.iter().map(|p| {
-                        Parameter {
-                            name: p.name.name.clone(),
-                            type_: self.map_type(p.data_type.as_ref()),
-                        }
-                    }).collect::<Vec<Parameter>>(),
-                    return_type: if let Some(return_type) = &m.return_type {
-                        self.map_type(Some(&return_type.data_type))
-                    } else {
-                        None
-                    },
-                }).collect::<Vec<MethodDefinition>>()
+                body.members
+                    .iter()
+                    .filter_map(|m| match m {
+                        ClassMember::AbstractMethod(method) => Some(method),
+                        _ => None,
+                    })
+                    .map(|m| MethodDefinition {
+                        name: m.name.value.clone(),
+                        visibility: m.modifiers.visibility().into(),
+                        modifiers: m
+                            .modifiers
+                            .modifiers
+                            .iter()
+                            .filter(|m| {
+                                !matches!(
+                                    m,
+                                    MethodModifier::Public(_)
+                                        | MethodModifier::Protected(_)
+                                        | MethodModifier::Private(_)
+                                )
+                            })
+                            .map(|m| m.clone().into())
+                            .collect::<Vec<Modifier>>(),
+                        parameters: m
+                            .parameters
+                            .parameters
+                            .inner
+                            .iter()
+                            .map(|p| Parameter {
+                                name: p.name.name.clone(),
+                                type_: self.map_type(p.data_type.as_ref()),
+                            })
+                            .collect::<Vec<Parameter>>(),
+                        return_type: if let Some(return_type) = &m.return_type {
+                            self.map_type(Some(&return_type.data_type))
+                        } else {
+                            None
+                        },
+                    })
+                    .collect::<Vec<MethodDefinition>>(),
             );
 
             self.collection.add_class(ClassDefinition {
@@ -276,159 +408,268 @@ impl Visitor<()> for DefinitionCollector {
             });
         }
 
-        if let Some(InterfaceStatement { name, extends, body, .. }) = downcast::<InterfaceStatement>(node) {
+        if let Some(InterfaceStatement {
+            name,
+            extends,
+            body,
+            ..
+        }) = downcast::<InterfaceStatement>(node)
+        {
             let name = self.qualify_name(&name.value);
             let extends = if let Some(extends) = extends {
-                extends.parents.inner.iter().map(|i| self.resolve_name(&i.value)).collect::<Vec<ByteString>>()
+                extends
+                    .parents
+                    .inner
+                    .iter()
+                    .map(|i| self.resolve_name(&i.value))
+                    .collect::<Vec<ByteString>>()
             } else {
                 Vec::new()
             };
-            let constants = body.members.iter()
+            let constants = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     InterfaceMember::Constant(constant) => Some(constant),
-                    _ => None
+                    _ => None,
                 })
-                .map(|m| m.entries.iter().map(|e| ConstantDefinition {
-                    name: e.name.value.clone(),
-                    visibility: m.modifiers.visibility().into(),
-                    final_: m.modifiers.has_final(),
-                }).collect::<Vec<ConstantDefinition>>())
+                .map(|m| {
+                    m.entries
+                        .iter()
+                        .map(|e| ConstantDefinition {
+                            name: e.name.value.clone(),
+                            visibility: m.modifiers.visibility().into(),
+                            final_: m.modifiers.has_final(),
+                        })
+                        .collect::<Vec<ConstantDefinition>>()
+                })
                 .flatten()
                 .collect::<Vec<ConstantDefinition>>();
-            let methods = body.members.iter()
+            let methods = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     InterfaceMember::Method(method) => Some(method),
-                    _ => None
+                    _ => None,
                 })
                 .map(|m| MethodDefinition {
                     name: m.name.value.clone(),
                     visibility: m.modifiers.visibility().into(),
-                    modifiers: m.modifiers.modifiers.iter().filter(|m| ! matches!(m, MethodModifier::Public(_) | MethodModifier::Protected(_) | MethodModifier::Private(_))).map(|m| m.clone().into()).collect::<Vec<Modifier>>(),
-                    parameters: m.parameters.parameters.inner.iter().map(|p| {
-                        Parameter {
+                    modifiers: m
+                        .modifiers
+                        .modifiers
+                        .iter()
+                        .filter(|m| {
+                            !matches!(
+                                m,
+                                MethodModifier::Public(_)
+                                    | MethodModifier::Protected(_)
+                                    | MethodModifier::Private(_)
+                            )
+                        })
+                        .map(|m| m.clone().into())
+                        .collect::<Vec<Modifier>>(),
+                    parameters: m
+                        .parameters
+                        .parameters
+                        .inner
+                        .iter()
+                        .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
-                        }
-                    }).collect::<Vec<Parameter>>(),
+                        })
+                        .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
                         self.map_type(Some(&return_type.data_type))
                     } else {
                         None
                     },
-                }).collect::<Vec<MethodDefinition>>();
+                })
+                .collect::<Vec<MethodDefinition>>();
 
-            self.collection.add_interface(InterfaceDefinition { name, extends, constants, methods });
+            self.collection.add_interface(InterfaceDefinition {
+                name,
+                extends,
+                constants,
+                methods,
+            });
         }
 
         if let Some(TraitStatement { name, body, .. }) = downcast::<TraitStatement>(node) {
             let name = self.qualify_name(&name.value);
 
-            let uses = body.members.iter()
+            let uses = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     TraitMember::TraitUsage(usage) => Some(usage),
-                    _ => None
+                    _ => None,
                 })
-                .map(|m| m.traits.iter().map(|i| self.resolve_name(&i.value)).collect::<Vec<ByteString>>())
+                .map(|m| {
+                    m.traits
+                        .iter()
+                        .map(|i| self.resolve_name(&i.value))
+                        .collect::<Vec<ByteString>>()
+                })
                 .flatten()
                 .collect::<Vec<ByteString>>();
 
-            let constants = body.members.iter()
+            let constants = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     TraitMember::Constant(constant) => Some(constant),
-                    _ => None
+                    _ => None,
                 })
-                .map(|m| m.entries.iter().map(|e| ConstantDefinition {
-                    name: e.name.value.clone(),
-                    visibility: m.modifiers.visibility().into(),
-                    final_: m.modifiers.has_final(),
-                }).collect::<Vec<ConstantDefinition>>())
+                .map(|m| {
+                    m.entries
+                        .iter()
+                        .map(|e| ConstantDefinition {
+                            name: e.name.value.clone(),
+                            visibility: m.modifiers.visibility().into(),
+                            final_: m.modifiers.has_final(),
+                        })
+                        .collect::<Vec<ConstantDefinition>>()
+                })
                 .flatten()
                 .collect::<Vec<ConstantDefinition>>();
-                
-            let mut properties = body.members.iter()
+
+            let mut properties = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     TraitMember::Property(property) => Some(property),
-                    _ => None
+                    _ => None,
                 })
-                .map(|p| p.entries.iter().map(|e| PropertyDefinition {
-                    name: e.variable().name.clone(),
-                    visibility: p.modifiers.visibility().into(),
-                    modifier: if p.modifiers.has_readonly() {
-                        Some(Modifier::Readonly)
-                    } else if p.modifiers.has_static() {
-                        Some(Modifier::Static)
-                    } else {
-                        None
-                    },
-                    type_: self.map_type(p.r#type.as_ref()),
-                }).collect::<Vec<PropertyDefinition>>())
+                .map(|p| {
+                    p.entries
+                        .iter()
+                        .map(|e| PropertyDefinition {
+                            name: e.variable().name.clone(),
+                            visibility: p.modifiers.visibility().into(),
+                            modifier: if p.modifiers.has_readonly() {
+                                Some(Modifier::Readonly)
+                            } else if p.modifiers.has_static() {
+                                Some(Modifier::Static)
+                            } else {
+                                None
+                            },
+                            type_: self.map_type(p.r#type.as_ref()),
+                        })
+                        .collect::<Vec<PropertyDefinition>>()
+                })
                 .flatten()
                 .collect::<Vec<PropertyDefinition>>();
 
             properties.extend(
-                    body.members.iter()
-                        .filter_map(|m| match m {
-                            TraitMember::VariableProperty(property) => Some(property),
-                            _ => None
-                        })
-                        .map(|p| p.entries.iter().map(|e| PropertyDefinition {
-                            name: e.variable().name.clone(),
-                            visibility: Visibility::Public,
-                            modifier: None,
-                            type_: self.map_type(p.r#type.as_ref()),
-                        }).collect::<Vec<PropertyDefinition>>())
-                        .flatten()
-                        .collect::<Vec<PropertyDefinition>>()
-                );
+                body.members
+                    .iter()
+                    .filter_map(|m| match m {
+                        TraitMember::VariableProperty(property) => Some(property),
+                        _ => None,
+                    })
+                    .map(|p| {
+                        p.entries
+                            .iter()
+                            .map(|e| PropertyDefinition {
+                                name: e.variable().name.clone(),
+                                visibility: Visibility::Public,
+                                modifier: None,
+                                type_: self.map_type(p.r#type.as_ref()),
+                            })
+                            .collect::<Vec<PropertyDefinition>>()
+                    })
+                    .flatten()
+                    .collect::<Vec<PropertyDefinition>>(),
+            );
 
             // TODO: Also add constructors to the method list.
             //       Ensure that any promoted properties from the constructor
             //       are also added to properties above. It might be easier to
             //       do this in a procedural loop.
-            let mut methods = body.members.iter()
+            let mut methods = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     TraitMember::ConcreteMethod(method) => Some(method),
-                    _ => None
+                    _ => None,
                 })
                 .map(|m| MethodDefinition {
                     name: m.name.value.clone(),
                     visibility: m.modifiers.visibility().into(),
-                    modifiers: m.modifiers.modifiers.iter().filter(|m| ! matches!(m, MethodModifier::Public(_) | MethodModifier::Protected(_) | MethodModifier::Private(_))).map(|m| m.clone().into()).collect::<Vec<Modifier>>(),
-                    parameters: m.parameters.parameters.inner.iter().map(|p| {
-                        Parameter {
+                    modifiers: m
+                        .modifiers
+                        .modifiers
+                        .iter()
+                        .filter(|m| {
+                            !matches!(
+                                m,
+                                MethodModifier::Public(_)
+                                    | MethodModifier::Protected(_)
+                                    | MethodModifier::Private(_)
+                            )
+                        })
+                        .map(|m| m.clone().into())
+                        .collect::<Vec<Modifier>>(),
+                    parameters: m
+                        .parameters
+                        .parameters
+                        .inner
+                        .iter()
+                        .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
-                        }
-                    }).collect::<Vec<Parameter>>(),
+                        })
+                        .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
                         self.map_type(Some(&return_type.data_type))
                     } else {
                         None
                     },
-                }).collect::<Vec<MethodDefinition>>();
+                })
+                .collect::<Vec<MethodDefinition>>();
 
             methods.extend(
-                body.members.iter()
-                .filter_map(|m| match m {
-                    TraitMember::AbstractMethod(method) => Some(method),
-                    _ => None
-                })
-                .map(|m| MethodDefinition {
-                    name: m.name.value.clone(),
-                    visibility: m.modifiers.visibility().into(),
-                    modifiers: m.modifiers.modifiers.iter().filter(|m| ! matches!(m, MethodModifier::Public(_) | MethodModifier::Protected(_) | MethodModifier::Private(_))).map(|m| m.clone().into()).collect::<Vec<Modifier>>(),
-                    parameters: m.parameters.parameters.inner.iter().map(|p| {
-                        Parameter {
-                            name: p.name.name.clone(),
-                            type_: self.map_type(p.data_type.as_ref()),
-                        }
-                    }).collect::<Vec<Parameter>>(),
-                    return_type: if let Some(return_type) = &m.return_type {
-                        self.map_type(Some(&return_type.data_type))
-                    } else {
-                        None
-                    },
-                }).collect::<Vec<MethodDefinition>>()
+                body.members
+                    .iter()
+                    .filter_map(|m| match m {
+                        TraitMember::AbstractMethod(method) => Some(method),
+                        _ => None,
+                    })
+                    .map(|m| MethodDefinition {
+                        name: m.name.value.clone(),
+                        visibility: m.modifiers.visibility().into(),
+                        modifiers: m
+                            .modifiers
+                            .modifiers
+                            .iter()
+                            .filter(|m| {
+                                !matches!(
+                                    m,
+                                    MethodModifier::Public(_)
+                                        | MethodModifier::Protected(_)
+                                        | MethodModifier::Private(_)
+                                )
+                            })
+                            .map(|m| m.clone().into())
+                            .collect::<Vec<Modifier>>(),
+                        parameters: m
+                            .parameters
+                            .parameters
+                            .inner
+                            .iter()
+                            .map(|p| Parameter {
+                                name: p.name.name.clone(),
+                                type_: self.map_type(p.data_type.as_ref()),
+                            })
+                            .collect::<Vec<Parameter>>(),
+                        return_type: if let Some(return_type) = &m.return_type {
+                            self.map_type(Some(&return_type.data_type))
+                        } else {
+                            None
+                        },
+                    })
+                    .collect::<Vec<MethodDefinition>>(),
             );
 
             self.collection.add_trait(TraitDefinition {
@@ -440,49 +681,87 @@ impl Visitor<()> for DefinitionCollector {
             });
         }
 
-        if let Some(UnitEnumStatement { name, implements, body, .. }) = downcast::<UnitEnumStatement>(node) {
+        if let Some(UnitEnumStatement {
+            name,
+            implements,
+            body,
+            ..
+        }) = downcast::<UnitEnumStatement>(node)
+        {
             let name = self.qualify_name(&name.value);
-            let implements = implements.iter().map(|i| self.resolve_name(&i.value)).collect::<Vec<ByteString>>();
+            let implements = implements
+                .iter()
+                .map(|i| self.resolve_name(&i.value))
+                .collect::<Vec<ByteString>>();
 
-            let constants = body.members.iter()
+            let constants = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     UnitEnumMember::Constant(constant) => Some(constant),
-                    _ => None
+                    _ => None,
                 })
-                .map(|m| m.entries.iter().map(|e| ConstantDefinition {
-                    name: e.name.value.clone(),
-                    visibility: m.modifiers.visibility().into(),
-                    final_: m.modifiers.has_final(),
-                }).collect::<Vec<ConstantDefinition>>())
+                .map(|m| {
+                    m.entries
+                        .iter()
+                        .map(|e| ConstantDefinition {
+                            name: e.name.value.clone(),
+                            visibility: m.modifiers.visibility().into(),
+                            final_: m.modifiers.has_final(),
+                        })
+                        .collect::<Vec<ConstantDefinition>>()
+                })
                 .flatten()
                 .collect::<Vec<ConstantDefinition>>();
 
-            let methods = body.members.iter()
+            let methods = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     UnitEnumMember::Method(method) => Some(method),
-                    _ => None
+                    _ => None,
                 })
                 .map(|m| MethodDefinition {
                     name: m.name.value.clone(),
                     visibility: m.modifiers.visibility().into(),
-                    modifiers: m.modifiers.modifiers.iter().filter(|m| ! matches!(m, MethodModifier::Public(_) | MethodModifier::Protected(_) | MethodModifier::Private(_))).map(|m| m.clone().into()).collect::<Vec<Modifier>>(),
-                    parameters: m.parameters.parameters.inner.iter().map(|p| {
-                        Parameter {
+                    modifiers: m
+                        .modifiers
+                        .modifiers
+                        .iter()
+                        .filter(|m| {
+                            !matches!(
+                                m,
+                                MethodModifier::Public(_)
+                                    | MethodModifier::Protected(_)
+                                    | MethodModifier::Private(_)
+                            )
+                        })
+                        .map(|m| m.clone().into())
+                        .collect::<Vec<Modifier>>(),
+                    parameters: m
+                        .parameters
+                        .parameters
+                        .inner
+                        .iter()
+                        .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
-                        }
-                    }).collect::<Vec<Parameter>>(),
+                        })
+                        .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
                         self.map_type(Some(&return_type.data_type))
                     } else {
                         None
                     },
-                }).collect::<Vec<MethodDefinition>>();
+                })
+                .collect::<Vec<MethodDefinition>>();
 
-            let members = body.members.iter()
+            let members = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     UnitEnumMember::Case(member) => Some(member),
-                    _ => None
+                    _ => None,
                 })
                 .map(|c| c.name.value.clone())
                 .collect::<Vec<ByteString>>();
@@ -497,49 +776,88 @@ impl Visitor<()> for DefinitionCollector {
             });
         }
 
-        if let Some(BackedEnumStatement { name, implements, body, backed_type, .. }) = downcast::<BackedEnumStatement>(node) {
+        if let Some(BackedEnumStatement {
+            name,
+            implements,
+            body,
+            backed_type,
+            ..
+        }) = downcast::<BackedEnumStatement>(node)
+        {
             let name = self.qualify_name(&name.value);
-            let implements = implements.iter().map(|i| self.resolve_name(&i.value)).collect::<Vec<ByteString>>();
+            let implements = implements
+                .iter()
+                .map(|i| self.resolve_name(&i.value))
+                .collect::<Vec<ByteString>>();
 
-            let constants = body.members.iter()
+            let constants = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     BackedEnumMember::Constant(constant) => Some(constant),
-                    _ => None
+                    _ => None,
                 })
-                .map(|m| m.entries.iter().map(|e| ConstantDefinition {
-                    name: e.name.value.clone(),
-                    visibility: m.modifiers.visibility().into(),
-                    final_: m.modifiers.has_final(),
-                }).collect::<Vec<ConstantDefinition>>())
+                .map(|m| {
+                    m.entries
+                        .iter()
+                        .map(|e| ConstantDefinition {
+                            name: e.name.value.clone(),
+                            visibility: m.modifiers.visibility().into(),
+                            final_: m.modifiers.has_final(),
+                        })
+                        .collect::<Vec<ConstantDefinition>>()
+                })
                 .flatten()
                 .collect::<Vec<ConstantDefinition>>();
 
-            let methods = body.members.iter()
+            let methods = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     BackedEnumMember::Method(method) => Some(method),
-                    _ => None
+                    _ => None,
                 })
                 .map(|m| MethodDefinition {
                     name: m.name.value.clone(),
                     visibility: m.modifiers.visibility().into(),
-                    modifiers: m.modifiers.modifiers.iter().filter(|m| ! matches!(m, MethodModifier::Public(_) | MethodModifier::Protected(_) | MethodModifier::Private(_))).map(|m| m.clone().into()).collect::<Vec<Modifier>>(),
-                    parameters: m.parameters.parameters.inner.iter().map(|p| {
-                        Parameter {
+                    modifiers: m
+                        .modifiers
+                        .modifiers
+                        .iter()
+                        .filter(|m| {
+                            !matches!(
+                                m,
+                                MethodModifier::Public(_)
+                                    | MethodModifier::Protected(_)
+                                    | MethodModifier::Private(_)
+                            )
+                        })
+                        .map(|m| m.clone().into())
+                        .collect::<Vec<Modifier>>(),
+                    parameters: m
+                        .parameters
+                        .parameters
+                        .inner
+                        .iter()
+                        .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
-                        }
-                    }).collect::<Vec<Parameter>>(),
+                        })
+                        .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
                         self.map_type(Some(&return_type.data_type))
                     } else {
                         None
                     },
-                }).collect::<Vec<MethodDefinition>>();
+                })
+                .collect::<Vec<MethodDefinition>>();
 
-            let members = body.members.iter()
+            let members = body
+                .members
+                .iter()
                 .filter_map(|m| match m {
                     BackedEnumMember::Case(member) => Some(member),
-                    _ => None
+                    _ => None,
                 })
                 .map(|c| c.name.value.clone())
                 .collect::<Vec<ByteString>>();

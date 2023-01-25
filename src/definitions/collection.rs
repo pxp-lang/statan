@@ -1,4 +1,7 @@
-use super::{functions::FunctionDefinition, classes::ClassDefinition, interfaces::InterfaceDefinition, traits::TraitDefinition, enums::EnumDefinition};
+use super::{
+    classes::ClassDefinition, enums::EnumDefinition, functions::FunctionDefinition,
+    interfaces::InterfaceDefinition, traits::TraitDefinition,
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct DefinitionCollection {
