@@ -1,7 +1,7 @@
-use std::io::{BufRead, Bytes};
+use std::io::{BufRead};
 
 use pxp_parser::{
-    downcast::{self, downcast},
+    downcast::{downcast},
     lexer::byte_string::ByteString,
     node::Node,
     parser::ast::{
@@ -13,7 +13,6 @@ use pxp_parser::{
         interfaces::{InterfaceMember, InterfaceStatement},
         modifiers::MethodModifier,
         namespaces::{BracedNamespace, UnbracedNamespace},
-        properties::Property,
         traits::{TraitMember, TraitStatement},
         GroupUseStatement, Statement, Use, UseStatement,
     },

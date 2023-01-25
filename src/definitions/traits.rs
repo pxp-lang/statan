@@ -1,4 +1,4 @@
-use crate::shared::modifier::Modifier;
+
 use pxp_parser::lexer::byte_string::ByteString;
 
 use super::{

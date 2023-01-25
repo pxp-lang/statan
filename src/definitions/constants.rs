@@ -1,6 +1,6 @@
 use pxp_parser::lexer::byte_string::ByteString;
 
-use crate::shared::{modifier::Modifier, visibility::Visibility};
+use crate::shared::{visibility::Visibility};
 
 #[derive(Debug, Clone)]
 pub struct ConstantDefinition {
