@@ -2,7 +2,7 @@ use statan::definitions::collector::DefinitionCollector;
 
 use crate::AnalyseCommand;
 
-pub fn run(command: AnalyseCommand) {
+pub fn run(_: AnalyseCommand) {
     let files = discoverer::discover(&["php"], &["."]).unwrap();
     let mut collector = DefinitionCollector::new();
 
@@ -12,4 +12,7 @@ pub fn run(command: AnalyseCommand) {
         
         collector.scan(&mut ast);
     }
+
+    let collection = collector.collect();
+    dbg!(collection);
 }

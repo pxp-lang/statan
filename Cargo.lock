@@ -25,9 +25,9 @@ checksum = "a20104e2335ce8a659d6dd92a51a767a0c062599c73b343fd152cb401e828c3d"
 
 [[package]]
 name = "clap"
-version = "4.1.2"
+version = "4.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e638668a62aced2c9fb72b5135a33b4a500485ccf2a0e402e09aa04ab2fc115"
+checksum = "f13b9c79b5d1dd500d20ef541215a6423c75829ef43117e1b4d17fd8af0b5d76"
 dependencies = [
  "bitflags",
  "clap_derive",
@@ -199,7 +199,7 @@ dependencies = [
 [[package]]
 name = "pxp-parser"
 version = "0.0.0-b3"
-source = "git+https://github.com/pxp-lang/parser?branch=main#efb23074f30352ef1334d5e85546726809fd79fd"
+source = "git+https://github.com/pxp-lang/parser?branch=main#93569242c173c4f7884ae5ecf773b6b473d1a872"
 dependencies = [
  "ariadne",
  "clap",

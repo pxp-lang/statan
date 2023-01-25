@@ -1,1 +1,10 @@
 pub mod collector;
+pub mod functions;
+pub mod parameter;
+pub mod collection;
+pub mod classes;
+pub mod property;
+pub mod interfaces;
+pub mod constants;
+pub mod traits;
+pub mod enums;
