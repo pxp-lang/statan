@@ -1,18 +1,29 @@
-use statan::definitions::collector::DefinitionCollector;
+use std::fs::read;
+
+use statan::{definitions::collector::DefinitionCollector, analyser::Analyser};
 
 use crate::AnalyseCommand;
 
-pub fn run(_: AnalyseCommand) {
+pub fn run(args: AnalyseCommand) {
     let files = discoverer::discover(&["php"], &["."]).unwrap();
     let mut collector = DefinitionCollector::new();
 
     for file in files {
         let contents = std::fs::read(&file).unwrap();
-        let mut ast = pxp_parser::parse(&contents).unwrap();
-
+        let parse_result = pxp_parser::parse(&contents);
+        if parse_result.is_err() {
+            continue;
+        }
+        let mut ast = parse_result.unwrap();
         collector.scan(&mut ast);
     }
 
     let collection = collector.collect();
-    dbg!(collection);
+    let mut analyser = Analyser::new(collection);
+
+    let contents = read(&args.file).unwrap();
+    let messages = analyser.analyse(args.file, &contents);
+
+    dbg!(messages);
 }
+
