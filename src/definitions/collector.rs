@@ -1,5 +1,5 @@
 use pxp_parser::{
-    downcast::{downcast},
+    downcast::downcast,
     lexer::byte_string::ByteString,
     node::Node,
     parser::ast::{
@@ -199,7 +199,9 @@ impl Visitor<()> for DefinitionCollector {
                 .collect::<Vec<Modifier>>();
             let name = self.qualify_name(&name.value);
 
-            let extends = extends.as_ref().map(|extends| self.resolve_name(&extends.parent.value));
+            let extends = extends
+                .as_ref()
+                .map(|extends| self.resolve_name(&extends.parent.value));
 
             let implements = if let Some(implements) = implements {
                 implements

@@ -1,4 +1,4 @@
-pub mod definitions;
-pub mod shared;
-pub mod rules;
 pub mod analyser;
+pub mod definitions;
+pub mod rules;
+pub mod shared;

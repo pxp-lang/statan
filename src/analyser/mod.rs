@@ -1,6 +1,6 @@
 use pxp_parser::parse;
 
-use crate::{rules::Rule, definitions::collection::DefinitionCollection};
+use crate::{definitions::collection::DefinitionCollection, rules::Rule};
 
 use self::messages::MessageCollector;
 

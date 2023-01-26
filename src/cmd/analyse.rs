@@ -1,6 +1,6 @@
 use std::fs::read;
 
-use statan::{definitions::collector::DefinitionCollector, analyser::Analyser};
+use statan::{analyser::Analyser, definitions::collector::DefinitionCollector};
 
 use crate::AnalyseCommand;
 
@@ -26,4 +26,3 @@ pub fn run(args: AnalyseCommand) {
 
     dbg!(messages);
 }
-
