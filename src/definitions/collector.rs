@@ -95,7 +95,25 @@ impl DefinitionCollector {
             ParsedType::String(_) => Type::String,
             ParsedType::Array(_) => Type::Array,
             ParsedType::Mixed(_) => Type::Mixed,
-            _ => todo!(),
+            ParsedType::Void(_) => Type::Void,
+            ParsedType::Object(_) => Type::Object,
+            ParsedType::Nullable(_, data_type) => Type::Nullable(Box::new(self.map_type(Some(data_type)).unwrap())),
+            ParsedType::Union(data_types) => {
+                let mut types = Vec::new();
+
+                for data_type in data_types {
+                    types.push(self.map_type(Some(data_type)).unwrap());
+                }
+
+                Type::Union(types)
+            },
+            ParsedType::False(_) => Type::False,
+            ParsedType::True(_) => Type::True,
+            ParsedType::Null(_) => Type::Null,
+            ParsedType::Callable(_) => Type::Callable,
+            ParsedType::StaticReference(_) => Type::Static,
+            ParsedType::Iterable(_) => Type::Iterable,
+            _ => todo!("unhandled type: {:?}", t),
         })
     }
 

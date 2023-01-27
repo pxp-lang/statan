@@ -1,3 +1,5 @@
+use pxp_parser::lexer::byte_string::ByteString;
+
 use super::{
     classes::ClassDefinition, enums::EnumDefinition, functions::FunctionDefinition,
     interfaces::InterfaceDefinition, traits::TraitDefinition,
@@ -31,5 +33,9 @@ impl DefinitionCollection {
 
     pub fn add_enum(&mut self, enum_: EnumDefinition) {
         self.enums.push(enum_);
+    }
+
+    pub fn get_function(&self, name: &ByteString) -> Option<&FunctionDefinition> {
+        self.functions.iter().find(|function| &function.name == name)
     }
 }

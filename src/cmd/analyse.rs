@@ -1,6 +1,7 @@
 use std::fs::read;
 
-use statan::{analyser::Analyser, definitions::collector::DefinitionCollector};
+use prettytable::{Table, row};
+use statan::{analyser::Analyser, definitions::collector::DefinitionCollector, rules};
 
 use crate::AnalyseCommand;
 
@@ -19,10 +20,17 @@ pub fn run(args: AnalyseCommand) {
     }
 
     let collection = collector.collect();
+
     let mut analyser = Analyser::new(collection);
+    analyser.add_rule(Box::new(rules::functions::valid_function::ValidFunctionRule));
 
     let contents = read(&args.file).unwrap();
     let messages = analyser.analyse(args.file, &contents);
 
-    dbg!(messages);
+    let mut table = Table::new();
+    table.add_row(row![messages.get_file()]);
+    for message in messages.iter() {
+        table.add_row(row![message]);
+    }
+    table.printstd();
 }

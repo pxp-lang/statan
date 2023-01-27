@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.1.2", features = ["derive"] }
 discoverer = "0.2.0"
+prettytable-rs = "0.10.0"
 pxp-parser = { git = "https://github.com/pxp-lang/parser", branch = "main" }
