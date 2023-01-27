@@ -27,6 +27,10 @@ pub fn run(args: AnalyseCommand) {
     let contents = read(&args.file).unwrap();
     let messages = analyser.analyse(args.file, &contents);
 
+    if messages.iter().len() == 0 {
+        return;
+    }
+
     let mut table = Table::new();
     table.add_row(row![messages.get_file()]);
     for message in messages.iter() {
