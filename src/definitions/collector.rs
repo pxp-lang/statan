@@ -113,7 +113,18 @@ impl DefinitionCollector {
             ParsedType::Callable(_) => Type::Callable,
             ParsedType::StaticReference(_) => Type::Static,
             ParsedType::Iterable(_) => Type::Iterable,
-            _ => todo!("unhandled type: {:?}", t),
+            ParsedType::Intersection(data_types) => {
+                let mut types = Vec::new();
+
+                for data_type in data_types {
+                    types.push(self.map_type(Some(data_type)).unwrap());
+                }
+
+                Type::Intersection(types)
+            },
+            ParsedType::SelfReference(_) => Type::Self_,
+            ParsedType::ParentReference(_) => Type::Parent,
+            ParsedType::Never(_) => Type::Never,
         })
     }
 

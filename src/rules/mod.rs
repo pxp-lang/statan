@@ -4,7 +4,7 @@ use pxp_parser::node::Node;
 
 use crate::{definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}};
 
-pub mod functions;
+pub mod valid_function;
 
 pub trait Rule: Debug {
     fn should_run(&self, node: &dyn Node) -> bool;

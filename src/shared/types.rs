@@ -15,8 +15,12 @@ pub enum Type {
     Null,
     Callable,
     Static,
+    Self_,
+    Parent,
     Iterable,
     Nullable(Box<Self>),
     Named(ByteString),
     Union(Vec<Self>),
+    Intersection(Vec<Self>),
+    Never,
 }
