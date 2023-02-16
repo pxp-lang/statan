@@ -61,6 +61,16 @@ impl Rule for ValidStaticCallRule {
             return;
         }
 
+        if method.is_abstract() {
+            messages.add(format!(
+                "Cannot call abstract static method {}::{}()",
+                class_name,
+                method_name
+            ));
+
+            return;
+        }
+
         // TODO: Ensure method is:
         // 1. Public, or
         // 2. Protected and called within an allowed context

@@ -12,6 +12,12 @@ pub struct FunctionDefinition {
     pub return_type: Option<Type>,
 }
 
+impl FunctionDefinition {
+    pub fn returns_void(&self) -> bool {
+        matches!(self.return_type, Some(Type::Void))
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MethodDefinition {
     pub name: ByteString,
@@ -24,5 +30,9 @@ pub struct MethodDefinition {
 impl MethodDefinition {
     pub fn is_static(&self) -> bool {
         self.modifiers.iter().any(|m| m == &Modifier::Static)
+    }
+
+    pub fn is_abstract(&self) -> bool {
+        self.modifiers.iter().any(|m| m == &Modifier::Abstract)
     }
 }
