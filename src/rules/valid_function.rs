@@ -1,6 +1,6 @@
 use pxp_parser::{node::Node, downcast::downcast, parser::ast::{FunctionCallExpression, Expression, identifiers::{Identifier, SimpleIdentifier}}, lexer::byte_string::ByteString};
 
-use crate::{rules::Rule, definitions::collection::DefinitionCollection, analyser::{messages::{self, MessageCollector}, context::Context}};
+use crate::{rules::Rule, definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}};
 
 #[derive(Debug)]
 pub struct ValidFunctionRule;
@@ -18,12 +18,12 @@ impl Rule for ValidFunctionRule {
             _ => return,
         };
 
-        if definitions.get_function(&name, &context).is_some() {
+        if definitions.get_function(name, context).is_some() {
             return;
         }
 
         // TODO: Add a check for execution inside of a `function_exists` call.
-        messages.add(format!("Function `{}` (DBG: {}, {}) not found", name, context.resolve_name(&name), {
+        messages.add(format!("Function `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
             let mut global_name = ByteString::default();
             global_name.extend(b"\\");
             global_name.extend(&name.bytes);

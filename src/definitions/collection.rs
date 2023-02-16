@@ -52,14 +52,14 @@ impl DefinitionCollection {
         let resolved_name = context.resolve_name(name);
         
         self.functions.iter()
-            .find(|function| &function.name == &resolved_name)
+            .find(|function| function.name == resolved_name)
             .or_else(|| {
                 let mut global_name = ByteString::default();
                 global_name.extend(b"\\");
                 global_name.extend(&name.bytes);
 
                 self.functions.iter()
-                    .find(|function| &function.name == &global_name)
+                    .find(|function| function.name == global_name)
             })
     }
 
@@ -67,14 +67,14 @@ impl DefinitionCollection {
         let resolved_name = context.resolve_name(name);
         
         self.classes.iter()
-            .find(|class| &class.name == &resolved_name)
+            .find(|class| class.name == resolved_name)
             .or_else(|| {
                 let mut global_name = ByteString::default();
                 global_name.extend(b"\\");
                 global_name.extend(&name.bytes);
 
                 self.classes.iter()
-                    .find(|class| &class.name == &global_name)
+                    .find(|class| class.name == global_name)
             })
     }
 }

@@ -2,7 +2,6 @@ use std::fs::{read, metadata};
 
 use indicatif::ProgressBar;
 use prettytable::{Table, row};
-use pxp_parser::parser::ast::Program;
 use statan::{analyser::Analyser, definitions::collector::DefinitionCollector, rules};
 
 use crate::AnalyseCommand;

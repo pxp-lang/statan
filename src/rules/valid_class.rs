@@ -1,6 +1,6 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{FunctionCallExpression, Expression, identifiers::{Identifier, SimpleIdentifier}, NewExpression}, lexer::byte_string::ByteString};
+use pxp_parser::{node::Node, downcast::downcast, parser::ast::{Expression, identifiers::{Identifier, SimpleIdentifier}, NewExpression}, lexer::byte_string::ByteString};
 
-use crate::{rules::Rule, definitions::collection::DefinitionCollection, analyser::{messages::{self, MessageCollector}, context::Context}};
+use crate::{rules::Rule, definitions::collection::DefinitionCollection, analyser::{messages::{MessageCollector}, context::Context}};
 
 #[derive(Debug)]
 pub struct ValidClassRule;
@@ -18,11 +18,11 @@ impl Rule for ValidClassRule {
             _ => return,
         };
 
-        let definition = definitions.get_class(&name, &context);
+        let definition = definitions.get_class(name, context);
 
         if definition.is_none() {
             // TODO: Add a check for execution inside of a `class_exists` call.
-            messages.add(format!("Class `{}` (DBG: {}, {}) not found", name, context.resolve_name(&name), {
+            messages.add(format!("Class `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
                 let mut global_name = ByteString::default();
                 global_name.extend(b"\\");
                 global_name.extend(&name.bytes);
@@ -35,7 +35,7 @@ impl Rule for ValidClassRule {
         let definition = definition.unwrap();
 
         if definition.is_abstract() {
-            messages.add(format!("Cannot instantiate abstract class `{}`", name));
+            messages.add(format!("Cannot instantiate abstract class `{name}`"));
         }
     }
 }

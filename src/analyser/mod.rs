@@ -38,8 +38,7 @@ impl Analyser {
 
         self.context_stack.push(Context::new());
         self.visit_node(&mut ast).unwrap();
-
-        return self.message_collector.clone();
+        self.message_collector.clone()
     }
 
     pub fn add_rule(&mut self, rule: Box<dyn Rule>) {
@@ -49,7 +48,7 @@ impl Analyser {
 
 impl Visitor<()> for Analyser {
     fn visit(&mut self, node: &mut dyn Node) -> Result<(), ()> {
-        let mut context = self.context_stack.last_mut().unwrap();
+        let context = self.context_stack.last_mut().unwrap();
 
         if let Some(BracedNamespace { name: Some(SimpleIdentifier { value, .. }), .. }) = downcast::<BracedNamespace>(node) {
             let mut namespace = ByteString::from(b"\\");
@@ -83,7 +82,7 @@ impl Visitor<()> for Analyser {
 
         for rule in &mut self.rules {
             if rule.should_run(node) {
-                rule.run(node, &self.definitions, &mut self.message_collector, &mut context);
+                rule.run(node, &self.definitions, &mut self.message_collector, context);
             }
         }
 

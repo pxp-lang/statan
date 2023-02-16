@@ -53,3 +53,9 @@ impl Context {
         self.imports.push(import);
     }
 }
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
