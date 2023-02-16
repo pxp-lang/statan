@@ -60,5 +60,10 @@ impl Rule for ValidStaticCallRule {
 
             return;
         }
+
+        // TODO: Ensure method is:
+        // 1. Public, or
+        // 2. Protected and called within an allowed context
+        // 3. Private and called within an allowed context
     }
 }
