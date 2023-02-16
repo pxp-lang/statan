@@ -15,17 +15,17 @@ impl Rule for VoidAssignmentRule {
     fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
         let assignment_operation_expression = downcast::<AssignmentOperationExpression>(node).unwrap();
 
-        let (left, right) = match assignment_operation_expression {
-            AssignmentOperationExpression::Assign { left, right, .. } => (left, right),
+        let result = match assignment_operation_expression {
+            AssignmentOperationExpression::Assign { right, .. } => right,
             _ => return,
         };
 
         // TODO: Also support method calls, not just functions.
-        if ! matches!(right.as_ref(), Expression::FunctionCall(_)) {
+        if ! matches!(result.as_ref(), Expression::FunctionCall(_)) {
             return;
         }
 
-        let function_name = match right.as_ref() {
+        let function_name = match result.as_ref() {
             Expression::FunctionCall(FunctionCallExpression { target, .. }) => match target.as_ref() {
                 Expression::Identifier(Identifier::SimpleIdentifier(identifier)) => identifier,
                 _ => return,

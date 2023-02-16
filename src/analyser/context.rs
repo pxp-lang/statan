@@ -1,9 +1,13 @@
-use pxp_parser::lexer::byte_string::ByteString;
+use std::collections::HashMap;
+
+use pxp_parser::{lexer::byte_string::ByteString, parser::ast::Expression};
+use crate::{shared::types::Type, definitions::collection::DefinitionCollection};
 
 #[derive(Debug, Clone)]
 pub struct Context {
     namespace: ByteString,
     imports: Vec<ByteString>,
+    variables: HashMap<ByteString, Type>,
 }
 
 impl Context {
@@ -11,7 +15,24 @@ impl Context {
         Self {
             namespace: ByteString::default(),
             imports: Vec::new(),
+            variables: HashMap::new(),
         }
+    }
+
+    pub fn set_variable(&mut self, name: ByteString, ty: Type) {
+        self.variables.insert(name, ty);
+    }
+
+    pub fn clean(&self) -> Self {
+        Self {
+            namespace: self.namespace.clone(),
+            imports: self.imports.clone(),
+            variables: HashMap::new(),
+        }
+    }
+
+    pub fn get_type(&self, expression: &Expression, definitions: &DefinitionCollection) -> Type {
+        Type::Mixed
     }
 
     pub fn resolve_name(&self, name: &ByteString) -> ByteString {

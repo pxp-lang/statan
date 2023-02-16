@@ -25,6 +25,7 @@ pub fn run(args: AnalyseCommand) {
     let collection = collector.collect();
 
     let mut analyser = Analyser::new(collection);
+    analyser.add_rule(Box::new(rules::dump_type::DumpTypeRule));
     analyser.add_rule(Box::new(rules::valid_function::ValidFunctionRule));
     analyser.add_rule(Box::new(rules::valid_class::ValidClassRule));
     analyser.add_rule(Box::new(rules::valid_static_call::ValidStaticCallRule));
