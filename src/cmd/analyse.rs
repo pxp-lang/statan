@@ -34,7 +34,6 @@ pub fn run(args: AnalyseCommand) {
 
     if metadata.is_dir() {
         let files = discoverer::discover(&["php"], &[&args.file]).unwrap();
-        dbg!(files.len());
         let progress_bar = ProgressBar::new(files.len() as u64);
         for file in files {
             let contents = read(&file).unwrap();
