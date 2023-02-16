@@ -6,6 +6,7 @@ use crate::{definitions::collection::DefinitionCollection, analyser::{messages::
 
 pub mod valid_function;
 pub mod valid_class;
+pub mod valid_static_call;
 
 pub trait Rule: Debug {
     fn should_run(&self, node: &dyn Node) -> bool;

@@ -22,4 +22,8 @@ impl ClassDefinition {
     pub fn is_abstract(&self) -> bool {
         self.modifiers.iter().any(|m| m == &Modifier::Abstract)
     }
+
+    pub fn get_method(&self, name: &ByteString) -> Option<&MethodDefinition> {
+        self.methods.iter().find(|m| m.name == *name)
+    }
 }

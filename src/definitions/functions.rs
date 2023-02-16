@@ -20,3 +20,9 @@ pub struct MethodDefinition {
     pub parameters: Vec<Parameter>,
     pub return_type: Option<Type>,
 }
+
+impl MethodDefinition {
+    pub fn is_static(&self) -> bool {
+        self.modifiers.iter().any(|m| m == &Modifier::Static)
+    }
+}
