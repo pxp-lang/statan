@@ -1,8 +1,9 @@
 use pxp_parser::{lexer::byte_string::ByteString, parser::ast::enums::BackedEnumType};
+use serde::{Serialize, Deserialize};
 
 use super::{constants::ConstantDefinition, functions::MethodDefinition};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnumDefinition {
     pub name: ByteString,
     pub implements: Vec<ByteString>,
@@ -12,7 +13,7 @@ pub struct EnumDefinition {
     pub methods: Vec<MethodDefinition>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EnumBackedType {
     Int,
     String,

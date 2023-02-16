@@ -25,8 +25,11 @@ pub fn run(args: AnalyseCommand) {
 
     let collection = collector.collect();
 
+    std::fs::write("./collection.json", serde_json::to_string(&collection).unwrap()).unwrap();
+
     let mut analyser = Analyser::new(collection);
     analyser.add_rule(Box::new(rules::valid_function::ValidFunctionRule));
+    analyser.add_rule(Box::new(rules::valid_class::ValidClassRule));
 
     let mut message_collections = Vec::new();
     let metadata = metadata(&args.file).unwrap();

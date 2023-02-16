@@ -1,17 +1,18 @@
 use pxp_parser::lexer::byte_string::ByteString;
+use serde::{Serialize, Deserialize};
 
 use crate::shared::{modifier::Modifier, types::Type, visibility::Visibility};
 
 use super::parameter::Parameter;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FunctionDefinition {
     pub name: ByteString,
     pub parameters: Vec<Parameter>,
     pub return_type: Option<Type>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MethodDefinition {
     pub name: ByteString,
     pub visibility: Visibility,

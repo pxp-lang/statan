@@ -1,8 +1,9 @@
 use pxp_parser::lexer::byte_string::ByteString;
+use serde::{Serialize, Deserialize};
 
 use super::{constants::ConstantDefinition, functions::MethodDefinition};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InterfaceDefinition {
     pub name: ByteString,
     pub extends: Vec<ByteString>,

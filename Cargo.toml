@@ -11,3 +11,5 @@ discoverer = "0.2.0"
 indicatif = "0.17.3"
 prettytable-rs = "0.10.0"
 pxp-parser = { git = "https://github.com/pxp-lang/parser", branch = "main" }
+serde = "1.0.152"
+serde_json = "1.0.93"

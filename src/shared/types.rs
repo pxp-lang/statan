@@ -1,6 +1,7 @@
 use pxp_parser::lexer::byte_string::ByteString;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Type {
     String,
     Int,

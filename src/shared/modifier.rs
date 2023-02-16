@@ -1,6 +1,7 @@
 use pxp_parser::parser::ast::modifiers::{ClassModifier, MethodModifier};
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Modifier {
     Final,
     Static,
