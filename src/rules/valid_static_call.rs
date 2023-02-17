@@ -15,65 +15,18 @@ impl Rule for ValidStaticCallRule {
     fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
         let static_method_call = downcast::<StaticMethodCallExpression>(node).unwrap();
 
-        let method_name = match static_method_call.method {
-            Identifier::SimpleIdentifier(SimpleIdentifier { value: ref method_name, .. }) => method_name,
-            _ => return,
-        };
+        // CRITERIA:
+        // - Only check static calls to known classes (identifiers)
+        //      - Also check static calls to self, static & parent
+        // - Only check static calls to known methods (identifiers)
+        // CHECKS:
+        // - Check if class exists
+        // - Check if method exists
+        //      - Check if method is static
+        //      - Check if method is not abstract
+        //      - Check if method is public, or protected and called within an allowed context, or private and called within an allowed context
+        // - If method doesn't exist, check if class has a __callStatic() method
 
-        let class_name = match static_method_call.target.as_ref() {
-            Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value: class_name, .. })) => class_name,
-            _ => return,
-        };
-
-        let definition = definitions.get_class(class_name, context);
-
-        if definition.is_none() {
-            messages.add(format!(
-                "Call to static method {}() on an unknown class {}",
-                method_name,
-                class_name
-            ));
-            return;
-        }
-
-        let definition = definition.unwrap();
-        let method = definition.get_method(method_name);
-
-        if method.is_none() {
-            messages.add(format!(
-                "Call to undefined static method {}::{}()",
-                class_name,
-                method_name
-            ));
-
-            return;
-        }
-
-        let method = method.unwrap();
-
-        if !method.is_static() {
-            messages.add(format!(
-                "Static call to instance method {}::{}()",
-                class_name,
-                method_name
-            ));
-
-            return;
-        }
-
-        if method.is_abstract() {
-            messages.add(format!(
-                "Cannot call abstract static method {}::{}()",
-                class_name,
-                method_name
-            ));
-
-            return;
-        }
-
-        // TODO: Ensure method is:
-        // 1. Public, or
-        // 2. Protected and called within an allowed context
-        // 3. Private and called within an allowed context
+        todo!()
     }
 }

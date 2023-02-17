@@ -1,4 +1,4 @@
-use pxp_parser::{parse, traverser::Visitor, node::Node, parser::ast::{UseStatement, Use, GroupUseStatement, namespaces::{UnbracedNamespace, BracedNamespace}, identifiers::SimpleIdentifier}, lexer::byte_string::ByteString, downcast::downcast};
+use pxp_parser::{parse, traverser::Visitor, node::Node, parser::ast::{UseStatement, Use, GroupUseStatement, namespaces::{UnbracedNamespace, BracedNamespace}, identifiers::SimpleIdentifier, Statement, classes::ClassStatement}, lexer::byte_string::ByteString, downcast::downcast};
 
 use crate::{definitions::collection::DefinitionCollection, rules::Rule};
 
@@ -47,6 +47,32 @@ impl Analyser {
 }
 
 impl Visitor<()> for Analyser {
+    fn visit_node(&mut self, node: &mut dyn Node) -> Result<(), ()> {
+        self.visit(node)?;
+
+        let mut context = self.context_stack.last_mut().unwrap().clean();
+        let mut did_push_context = false;
+
+        match downcast(node) {
+            Some(ClassStatement { name, ..}) => {
+                context.set_classish_context(&name.value);
+                self.context_stack.push(context);
+                did_push_context = true;
+            },
+            None => {},
+        };
+
+        for child in node.children() {
+            self.visit_node(child)?;
+        }
+
+        if did_push_context {
+            self.context_stack.pop();
+        }
+
+        Ok(())
+    }
+
     fn visit(&mut self, node: &mut dyn Node) -> Result<(), ()> {
         let context = self.context_stack.last_mut().unwrap();
 

@@ -330,7 +330,7 @@ dependencies = [
 [[package]]
 name = "pxp-parser"
 version = "0.0.0-b3"
-source = "git+https://github.com/pxp-lang/parser?branch=main#ca08d8830c1741285ab40f4086f46972407b6400"
+source = "git+https://github.com/pxp-lang/parser?branch=main#3d17f111ab803c171683d0a059ec705f46bb4615"
 dependencies = [
  "ariadne",
  "clap",

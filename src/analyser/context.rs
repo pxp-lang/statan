@@ -8,6 +8,7 @@ pub struct Context {
     namespace: ByteString,
     imports: Vec<ByteString>,
     variables: HashMap<ByteString, Type>,
+    classish_context: Option<ByteString>,
 }
 
 impl Context {
@@ -16,6 +17,7 @@ impl Context {
             namespace: ByteString::default(),
             imports: Vec::new(),
             variables: HashMap::new(),
+            classish_context: None,
         }
     }
 
@@ -28,7 +30,20 @@ impl Context {
             namespace: self.namespace.clone(),
             imports: self.imports.clone(),
             variables: HashMap::new(),
+            classish_context: self.classish_context.clone(),
         }
+    }
+
+    pub fn set_classish_context(&mut self, name: &ByteString) {
+        self.classish_context = Some(name.clone());
+    }
+
+    pub fn is_in_class(&self) -> bool {
+        self.classish_context.is_some()
+    }
+
+    pub fn classish_context(&self) -> &ByteString {
+        self.classish_context.as_ref().unwrap()
     }
 
     pub fn get_type(&self, expression: &Expression, definitions: &DefinitionCollection) -> Type {
