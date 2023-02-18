@@ -77,4 +77,19 @@ impl DefinitionCollection {
                     .find(|class| class.name == global_name)
             })
     }
+
+    pub fn get_trait(&self, name: &ByteString, context: &Context) -> Option<&TraitDefinition> {
+        let resolved_name = context.resolve_name(name);
+        
+        self.traits.iter()
+            .find(|trait_| trait_.name == resolved_name)
+            .or_else(|| {
+                let mut global_name = ByteString::default();
+                global_name.extend(b"\\");
+                global_name.extend(&name.bytes);
+
+                self.traits.iter()
+                    .find(|trait_| trait_.name == global_name)
+            })
+    }
 }

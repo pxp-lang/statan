@@ -75,12 +75,12 @@ impl Rule for ValidStaticCallRule {
         };
 
         // 4. Get the method definition from the class definition.
-        let mut method = class.get_method(method_name);
+        let mut method = class.get_method(method_name, definitions, context);
         let mut has_inherited = false;
-        let has_call_static = class.get_method(&ByteString::from("__callStatic")).is_some();
+        let call_static = &ByteString::from("__callStatic");
+        let has_call_static = class.get_method(call_static, definitions, context).is_some() || class.get_inherited_method(call_static, definitions, context).is_some();
 
         // 5. Check that the method exists.
-        // TODO: Check if class's docblock has an @method.
         if method.is_none() {
             if let Some((inherited_method_from, inherited_method)) = class.get_inherited_method(method_name, definitions, context) {
                 method = Some(inherited_method);
@@ -91,6 +91,11 @@ impl Rule for ValidStaticCallRule {
                 messages.add(format!("Call to undefined method {}::{}()", class_name, method_name));
                 return;
             }
+        }
+
+        // TODO: Check if class's docblock has an @method.
+        if has_call_static {
+            return;
         }
 
         let method = method.unwrap();
