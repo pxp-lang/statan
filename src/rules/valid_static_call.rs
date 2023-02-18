@@ -1,4 +1,4 @@
-use pxp_parser::{node::Node, parser::ast::{StaticMethodCallExpression, Expression, identifiers::{Identifier, SimpleIdentifier}}, downcast::downcast};
+use pxp_parser::{node::Node, parser::ast::{StaticMethodCallExpression, Expression, identifiers::{Identifier, SimpleIdentifier}}, downcast::downcast, lexer::byte_string::ByteString};
 
 use crate::{definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}};
 
@@ -15,18 +15,124 @@ impl Rule for ValidStaticCallRule {
     fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
         let static_method_call = downcast::<StaticMethodCallExpression>(node).unwrap();
 
-        // CRITERIA:
-        // - Only check static calls to known classes (identifiers)
-        //      - Also check static calls to self, static & parent
-        // - Only check static calls to known methods (identifiers)
-        // CHECKS:
-        // - Check if class exists
-        // - Check if method exists
-        //      - Check if method is static
-        //      - Check if method is not abstract
-        //      - Check if method is public, or protected and called within an allowed context, or private and called within an allowed context
-        // - If method doesn't exist, check if class has a __callStatic() method
+        // 1. Check that the method is a simple identifier, i.e. Foo::bar(). 
+        let method_name = match &static_method_call.method {
+            Identifier::SimpleIdentifier(SimpleIdentifier { value, .. }) => value,
+            _ => return,
+        };
 
-        todo!()
+        // 2. Get the class name based on the left-hand side of the call.
+        //    If the method call is on `self`, then the class name is pulled from the context.
+        //    If the method call is on `static`, then the class name is pulled from the context.
+        //    If the method call is on `parent`, then the class name is pulled from the context.
+        let mut class_name = match static_method_call.target.as_ref() {
+            Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value, .. })) => value,
+            Expression::Self_ => {
+                if ! context.is_in_class() {
+                    messages.add(format!("Calling self::{}() outside of class context", method_name));
+                    return;
+                }
+
+                context.classish_context()
+            },
+            Expression::Static => {
+                if ! context.is_in_class() {
+                    messages.add(format!("Calling static::{}() outside of class context", method_name));
+                    return;
+                }
+
+                context.classish_context()
+            },
+            Expression::Parent => {
+                if ! context.is_in_class() {
+                    messages.add(format!("Calling parent::{}() outside of class context", method_name));
+                    return;
+                }
+
+                let child_class = definitions.get_class(context.classish_context(), &context).unwrap();
+                
+                if child_class.extends.is_none() {
+                    messages.add(format!(
+                        "Calling parent::{}() but {} does not extend any class",
+                        method_name,
+                        context.classish_context()
+                    ));
+                    return;
+                }
+
+                child_class.extends.as_ref().unwrap()
+            },
+            _ => return,
+        };
+
+        // 3. Get the class definition from the definitions collection.
+        let class = match definitions.get_class(class_name, &context) {
+            Some(class) => class,
+            None => {
+                messages.add(format!("Call to {}::{}() on unknown class {}", class_name, method_name, class_name));
+                return;
+            },
+        };
+
+        // 4. Get the method definition from the class definition.
+        let mut method = class.get_method(method_name);
+        let mut has_inherited = false;
+        let has_call_static = class.get_method(&ByteString::from("__callStatic")).is_some();
+
+        // 5. Check that the method exists.
+        // TODO: Check if class's docblock has an @method.
+        if method.is_none() {
+            if let Some((inherited_method_from, inherited_method)) = class.get_inherited_method(method_name, definitions, context) {
+                method = Some(inherited_method);
+                class_name = inherited_method_from;
+                has_inherited = true;
+            } else if ! has_call_static {
+                // TODO: Check if class's docblock has an @method.
+                messages.add(format!("Call to undefined method {}::{}()", class_name, method_name));
+                return;
+            }
+        }
+
+        let method = method.unwrap();
+
+        // 6. Check that the method is static.
+        if ! method.is_static() {
+            messages.add(format!("Call to non-static method {}::{}()", class_name, method_name));
+            return;
+        }
+
+        // 7. Check that the method is not abstract.
+        if method.is_abstract() {
+            messages.add(format!("Call to abstract method {}::{}()", class_name, method_name));
+            return;
+        }
+
+        // 8. If the method is public, return early to avoid unnecessary checks.
+        if method.is_protected() || method.is_private() {
+            // If we're not in a class context, then calling a static protected or private method isn't allowed at all.
+            if ! context.is_in_class() {
+                messages.add(format!("Call to {} method {}::{}()", if method.is_protected() { "protected" } else if method.is_private() { "private" } else { unreachable!() }, class_name, method_name));
+                return;
+            }
+
+            let current_class = definitions.get_class(context.classish_context(), &context).unwrap();
+
+            // If the current class is the same as the class that the method is being called on, then we're good.
+            if current_class == class && ! has_inherited {
+                return;
+            }
+
+            // If we're not in the same class, or if the method is inherited, then calling a private method is disallowed.
+            if method.is_private() {
+                messages.add(format!("Call to private method {}::{}()", class_name, method_name));
+                return;
+            }
+
+            // If the method is protected, then we need to check if the current class inherits the method from a class in the inheritance chain.
+            if current_class.get_inherited_method(method_name, definitions, context).is_none() {
+                messages.add(format!("Call to protected method {}::{}()", class_name, method_name));
+                return;
+            }
+        }
     }
 }

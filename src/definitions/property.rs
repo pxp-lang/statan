@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::shared::{modifier::Modifier, types::Type, visibility::Visibility};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PropertyDefinition {
     pub name: ByteString,
     pub visibility: Visibility,

@@ -18,7 +18,7 @@ impl FunctionDefinition {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MethodDefinition {
     pub name: ByteString,
     pub visibility: Visibility,
@@ -34,5 +34,17 @@ impl MethodDefinition {
 
     pub fn is_abstract(&self) -> bool {
         self.modifiers.iter().any(|m| m == &Modifier::Abstract)
+    }
+
+    pub fn is_public(&self) -> bool {
+        self.visibility == Visibility::Public
+    }
+
+    pub fn is_protected(&self) -> bool {
+        self.visibility == Visibility::Protected
+    }
+
+    pub fn is_private(&self) -> bool {
+        self.visibility == Visibility::Private
     }
 }

@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::shared::visibility::Visibility;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ConstantDefinition {
     pub name: ByteString,
     pub visibility: Visibility,
