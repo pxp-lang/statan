@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use pxp_parser::{lexer::byte_string::ByteString, parser::ast::Expression};
+use pxp_parser::{lexer::byte_string::ByteString, parser::ast::{Expression, literals::Literal, variables::{Variable, SimpleVariable}, FunctionCallExpression, identifiers::{Identifier, SimpleIdentifier}}};
 use crate::{shared::types::Type, definitions::collection::DefinitionCollection};
 
 #[derive(Debug, Clone)]
@@ -25,6 +25,10 @@ impl Context {
         self.variables.insert(name, ty);
     }
 
+    pub fn has_variable(&self, name: &ByteString) -> bool {
+        self.variables.contains_key(name)
+    }
+
     pub fn clean(&self) -> Self {
         Self {
             namespace: self.namespace.clone(),
@@ -47,7 +51,31 @@ impl Context {
     }
 
     pub fn get_type(&self, expression: &Expression, definitions: &DefinitionCollection) -> Type {
-        Type::Mixed
+        match expression {
+            Expression::Literal(Literal::Integer(_)) => Type::Int,
+            Expression::Literal(Literal::Float(_)) => Type::Float,
+            Expression::Literal(Literal::String(_)) => Type::String,
+            Expression::Bool(_) => Type::Bool,
+            Expression::Null => Type::Null,
+            Expression::Variable(Variable::SimpleVariable(SimpleVariable { name, .. })) => self.variables.get(name).cloned().unwrap(),
+            Expression::FunctionCall(FunctionCallExpression { target, .. }) => match target.as_ref() {
+                Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value: function_name, .. })) => {
+                    if let Some(function_definition) = definitions.get_function(function_name, self) {
+                        if let Some(return_type) = function_definition.return_type.as_ref() {
+                            return_type.clone()
+                        } else {
+                            Type::Mixed
+                        }
+                    } else {
+                        // NOTE: If we reach this point, we can't find the function so we'll let the valid function rule
+                        //       take care of the error.
+                        Type::Mixed
+                    }
+                },
+                _ => Type::Mixed,
+            },
+            _ => Type::Mixed,
+        }
     }
 
     pub fn resolve_name(&self, name: &ByteString) -> ByteString {

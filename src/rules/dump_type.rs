@@ -38,6 +38,6 @@ impl Rule for DumpTypeRule {
 
         let ty = context.get_type(&argument.value, definitions);
 
-        messages.add(format!("Dumped type: {:?}", ty));
+        messages.add(format!("Dumped type: {}", ty));
     }
 }

@@ -3,12 +3,15 @@ use std::fs::{read, metadata};
 use indicatif::ProgressBar;
 use prettytable::{Table, row};
 use statan::{analyser::Analyser, definitions::collector::DefinitionCollector, rules};
+use colored::*;
 
 use crate::AnalyseCommand;
 
 pub fn run(args: AnalyseCommand) {
     let files = discoverer::discover(&["php"], &["."]).unwrap();
     let mut collector = DefinitionCollector::new();
+
+    println!("{}", "> Discovering project definitions...".yellow());
 
     for file in files {
         let contents = std::fs::read(&file).unwrap();
@@ -22,15 +25,17 @@ pub fn run(args: AnalyseCommand) {
         collector.scan(&mut ast);
     }
 
+    println!("{}", "> Analysing project...".yellow());
+
     let collection = collector.collect();
 
     let mut analyser = Analyser::new(collection);
+    analyser.add_rule(Box::new(rules::valid_assignment::ValidAssignmentRule));
     analyser.add_rule(Box::new(rules::dump_type::DumpTypeRule));
     analyser.add_rule(Box::new(rules::valid_function::ValidFunctionRule));
     analyser.add_rule(Box::new(rules::valid_class::ValidClassRule));
     analyser.add_rule(Box::new(rules::valid_static_call::ValidStaticCallRule));
     analyser.add_rule(Box::new(rules::valid_this_call::ValidThisCallRule));
-    analyser.add_rule(Box::new(rules::void_assignment::VoidAssignmentRule));
 
     let mut message_collections = Vec::new();
     let metadata = metadata(&args.file).unwrap();
