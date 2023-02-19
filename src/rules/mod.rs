@@ -9,6 +9,7 @@ pub mod valid_class;
 pub mod valid_static_call;
 pub mod void_assignment;
 pub mod dump_type;
+pub mod valid_this_call;
 
 pub trait Rule: Debug {
     fn should_run(&self, node: &dyn Node) -> bool;

@@ -29,6 +29,7 @@ pub fn run(args: AnalyseCommand) {
     analyser.add_rule(Box::new(rules::valid_function::ValidFunctionRule));
     analyser.add_rule(Box::new(rules::valid_class::ValidClassRule));
     analyser.add_rule(Box::new(rules::valid_static_call::ValidStaticCallRule));
+    analyser.add_rule(Box::new(rules::valid_this_call::ValidThisCallRule));
     analyser.add_rule(Box::new(rules::void_assignment::VoidAssignmentRule));
 
     let mut message_collections = Vec::new();
