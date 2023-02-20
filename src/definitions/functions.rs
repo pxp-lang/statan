@@ -16,6 +16,18 @@ impl FunctionDefinition {
     pub fn returns_void(&self) -> bool {
         matches!(self.return_type, Some(Type::Void))
     }
+
+    pub fn min_arity(&self) -> usize {
+        self.parameters.iter().take_while(|p| !p.optional && !p.spread).count()
+    }
+
+    pub fn max_arity(&self) -> usize {
+        if self.parameters.iter().any(|p| p.spread) {
+            usize::MAX
+        } else {
+            self.parameters.len()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

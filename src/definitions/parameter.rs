@@ -7,4 +7,6 @@ use crate::shared::types::Type;
 pub struct Parameter {
     pub name: ByteString,
     pub type_: Option<Type>,
+    pub optional: bool,
+    pub spread: bool,
 }

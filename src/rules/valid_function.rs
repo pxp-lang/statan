@@ -18,16 +18,30 @@ impl Rule for ValidFunctionRule {
             _ => return,
         };
 
-        if definitions.get_function(name, context).is_some() {
+        let definition = definitions.get_function(name, context);
+
+        if definition.is_none() {
+            // TODO: Add a check for execution inside of a `function_exists` call.
+            messages.error(format!("Function `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
+                let mut global_name = ByteString::default();
+                global_name.extend(b"\\");
+                global_name.extend(&name.bytes);
+                global_name
+            }), span.line);
+
             return;
         }
 
-        // TODO: Add a check for execution inside of a `function_exists` call.
-        messages.error(format!("Function `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
-            let mut global_name = ByteString::default();
-            global_name.extend(b"\\");
-            global_name.extend(&name.bytes);
-            global_name
-        }), span.line);
+        let definition = definition.unwrap();
+        let min_arity = definition.min_arity();
+        let max_arity = definition.max_arity();
+
+        if function_call_expression.arguments.arguments.len() < min_arity {
+            messages.error(format!("Function {}() requires {} arguments, {} given", name, min_arity, function_call_expression.arguments.arguments.len()), span.line);
+        }
+
+        if function_call_expression.arguments.arguments.len() > max_arity {
+            messages.error(format!("Function {}() requires {} arguments, {} given", name, max_arity, function_call_expression.arguments.arguments.len()), span.line);
+        }
     }
 }

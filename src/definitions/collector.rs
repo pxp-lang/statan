@@ -197,6 +197,8 @@ impl Visitor<()> for DefinitionCollector {
                 .map(|p| Parameter {
                     name: p.name.name.clone(),
                     type_: self.map_type(p.data_type.as_ref()),
+                    optional: p.default.is_some(),
+                    spread: p.ellipsis.is_some(),
                 })
                 .collect::<Vec<Parameter>>();
             let return_type = if let Some(ReturnType { data_type, .. }) = return_type {
@@ -360,6 +362,8 @@ impl Visitor<()> for DefinitionCollector {
                         .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
+                            optional: p.default.is_some(),
+                            spread: p.ellipsis.is_some(),
                         })
                         .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
@@ -402,6 +406,8 @@ impl Visitor<()> for DefinitionCollector {
                             .map(|p| Parameter {
                                 name: p.name.name.clone(),
                                 type_: self.map_type(p.data_type.as_ref()),
+                                optional: p.default.is_some(),
+                                spread: p.ellipsis.is_some(),
                             })
                             .collect::<Vec<Parameter>>(),
                         return_type: if let Some(return_type) = &m.return_type {
@@ -493,6 +499,8 @@ impl Visitor<()> for DefinitionCollector {
                         .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
+                            optional: p.default.is_some(),
+                            spread: p.ellipsis.is_some(),
                         })
                         .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
@@ -631,6 +639,8 @@ impl Visitor<()> for DefinitionCollector {
                         .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
+                            optional: p.default.is_some(),
+                            spread: p.ellipsis.is_some(),
                         })
                         .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
@@ -673,6 +683,8 @@ impl Visitor<()> for DefinitionCollector {
                             .map(|p| Parameter {
                                 name: p.name.name.clone(),
                                 type_: self.map_type(p.data_type.as_ref()),
+                                optional: p.default.is_some(),
+                                spread: p.ellipsis.is_some(),
                             })
                             .collect::<Vec<Parameter>>(),
                         return_type: if let Some(return_type) = &m.return_type {
@@ -757,6 +769,8 @@ impl Visitor<()> for DefinitionCollector {
                         .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
+                            optional: p.default.is_some(),
+                            spread: p.ellipsis.is_some(),
                         })
                         .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
@@ -852,6 +866,8 @@ impl Visitor<()> for DefinitionCollector {
                         .map(|p| Parameter {
                             name: p.name.name.clone(),
                             type_: self.map_type(p.data_type.as_ref()),
+                            optional: p.default.is_some(),
+                            spread: p.ellipsis.is_some(),
                         })
                         .collect::<Vec<Parameter>>(),
                     return_type: if let Some(return_type) = &m.return_type {
