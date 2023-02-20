@@ -13,8 +13,8 @@ impl Rule for ValidFunctionRule {
     fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
         let function_call_expression = downcast::<FunctionCallExpression>(node).unwrap();
 
-        let name = match function_call_expression.target.as_ref() {
-            Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value: function_name, .. })) => function_name,
+        let (name, span) = match function_call_expression.target.as_ref() {
+            Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value: function_name, span })) => (function_name, span),
             _ => return,
         };
 
@@ -23,11 +23,11 @@ impl Rule for ValidFunctionRule {
         }
 
         // TODO: Add a check for execution inside of a `function_exists` call.
-        messages.add(format!("Function `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
+        messages.error(format!("Function `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
             let mut global_name = ByteString::default();
             global_name.extend(b"\\");
             global_name.extend(&name.bytes);
             global_name
-        }));
+        }), span.line);
     }
 }

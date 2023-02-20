@@ -62,9 +62,9 @@ pub fn run(args: AnalyseCommand) {
         }
 
         let mut table = Table::new();
-        table.add_row(row![messages.get_file()]);
+        table.add_row(row!["Line", messages.get_file()]);
         for message in messages.iter() {
-            table.add_row(row![message]);
+            table.add_row(row![message.line, message.message]);
         }
         table.printstd();
     }

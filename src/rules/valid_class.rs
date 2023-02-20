@@ -13,8 +13,8 @@ impl Rule for ValidClassRule {
     fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
         let new_expression = downcast::<NewExpression>(node).unwrap();
 
-        let name = match new_expression.target.as_ref() {
-            Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value: class_name, .. })) => class_name,
+        let (name, span) = match new_expression.target.as_ref() {
+            Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value: class_name, span })) => (class_name, span),
             _ => return,
         };
 
@@ -22,12 +22,12 @@ impl Rule for ValidClassRule {
 
         if definition.is_none() {
             // TODO: Add a check for execution inside of a `class_exists` call.
-            messages.add(format!("Class `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
+            messages.error(format!("Class `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
                 let mut global_name = ByteString::default();
                 global_name.extend(b"\\");
                 global_name.extend(&name.bytes);
                 global_name
-            }));
+            }), span.line);
 
             return;
         }
@@ -35,7 +35,7 @@ impl Rule for ValidClassRule {
         let definition = definition.unwrap();
 
         if definition.is_abstract() {
-            messages.add(format!("Cannot instantiate abstract class `{name}`"));
+            messages.error(format!("Cannot instantiate abstract class `{name}`"), span.line);
         }
     }
 }

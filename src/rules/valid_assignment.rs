@@ -33,10 +33,10 @@ impl Rule for ValidAssignmentRule {
 
         // 4. If the type of the right-hand side if `void` (null), we should warn.
         if value_type == Type::Void {
-            messages.add(format!(
+            messages.error(format!(
                 "Assignment of void to variable {}",
                 variable_name,
-            ));
+            ), assignment_operation_expression.operator().line);
         }
 
         // 4. Enter the new variable type into the context.

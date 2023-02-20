@@ -34,7 +34,7 @@ impl Rule for ValidThisCallRule {
         // 3. Check if currently inside of a classish context.
         // TODO: We should also calling $this->foo() inside of a Closure since it could be bound to an object.
         if ! context.is_in_class() {
-            messages.add(format!("Calling $this->{}() outside of class context", method_name));
+            messages.error(format!("Calling $this->{}() outside of class context", method_name), method_call_expression.arrow.line);
             return;
         }
 
@@ -58,11 +58,11 @@ impl Rule for ValidThisCallRule {
                 has_inherited = true;
             } else if ! has_call_magic {
                 // TODO: Check if class's docblock has an @method.
-                messages.add(format!(
+                messages.error(format!(
                     "Call to undefined method $this->{}() on {}",
                     method_name,
                     classish_context,
-                ));
+                ), method_call_expression.arrow.line);
                 return;
             }
         }
@@ -77,11 +77,11 @@ impl Rule for ValidThisCallRule {
         // 7. Check if method is static.
         // TODO: This is actually valid PHP code, but we should probably warn about it when we can.
         if method.is_static() {
-            messages.add(format!(
+            messages.error(format!(
                 "Calling $this->{}() but {} is a static method",
                 method_name,
                 method_name,
-            ));
+            ), method_call_expression.arrow.line);
         }
 
         // TODO: Do we need some magic logic here for handling abstract calls?
@@ -104,10 +104,10 @@ impl Rule for ValidThisCallRule {
         // 11. If the method is private and the contexts do not match, then a private call
         //     is disallowed.
         if method.is_private() {
-            messages.add(format!(
+            messages.error(format!(
                 "Call to private method $this->{}()",
                 method_name,
-            ));
+            ), method_call_expression.arrow.line);
             return;
         }
     }

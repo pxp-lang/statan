@@ -27,17 +27,17 @@ impl Rule for DumpTypeRule {
         let argument = match function_call_expression.arguments.arguments.first() {
             Some(Argument::Positional(argument)) => argument,
             Some(Argument::Named(_)) => {
-                messages.add("dumpType() does not support named arguments");
+                messages.error("dumpType() does not support named arguments", function_call_expression.arguments.left_parenthesis.line);
                 return;
             },
             None => {
-                messages.add("dumpType() requires an argument");
+                messages.error("dumpType() requires an argument", function_call_expression.arguments.left_parenthesis.line);
                 return;
             },
         };
 
         let ty = context.get_type(&argument.value, definitions);
 
-        messages.add(format!("Dumped type: {}", ty));
+        messages.note(format!("Dumped type: {}", ty), function_call_expression.arguments.left_parenthesis.line);
     }
 }

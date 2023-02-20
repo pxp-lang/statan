@@ -30,7 +30,7 @@ impl Analyser {
 
         let parse_result = parse(contents);
         if let Err(error) = parse_result {
-            self.message_collector.add(error.to_string());
+            self.message_collector.error(error.to_string(), 0);
             return self.message_collector.clone();
         }
 

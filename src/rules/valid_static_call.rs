@@ -29,7 +29,7 @@ impl Rule for ValidStaticCallRule {
             Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value, .. })) => value,
             Expression::Self_ => {
                 if ! context.is_in_class() {
-                    messages.add(format!("Calling self::{}() outside of class context", method_name));
+                    messages.error(format!("Calling self::{}() outside of class context", method_name), static_method_call.double_colon.line);
                     return;
                 }
 
@@ -37,7 +37,7 @@ impl Rule for ValidStaticCallRule {
             },
             Expression::Static => {
                 if ! context.is_in_class() {
-                    messages.add(format!("Calling static::{}() outside of class context", method_name));
+                    messages.error(format!("Calling static::{}() outside of class context", method_name), static_method_call.double_colon.line);
                     return;
                 }
 
@@ -45,18 +45,18 @@ impl Rule for ValidStaticCallRule {
             },
             Expression::Parent => {
                 if ! context.is_in_class() {
-                    messages.add(format!("Calling parent::{}() outside of class context", method_name));
+                    messages.error(format!("Calling parent::{}() outside of class context", method_name), static_method_call.double_colon.line);
                     return;
                 }
 
                 let child_class = definitions.get_class(context.classish_context(), &context).unwrap();
                 
                 if child_class.extends.is_none() {
-                    messages.add(format!(
+                    messages.error(format!(
                         "Calling parent::{}() but {} does not extend any class",
                         method_name,
                         context.classish_context()
-                    ));
+                    ), static_method_call.double_colon.line);
                     return;
                 }
 
@@ -69,7 +69,7 @@ impl Rule for ValidStaticCallRule {
         let class = match definitions.get_class(class_name, &context) {
             Some(class) => class,
             None => {
-                messages.add(format!("Call to {}::{}() on unknown class {}", class_name, method_name, class_name));
+                messages.error(format!("Call to {}::{}() on unknown class {}", class_name, method_name, class_name), static_method_call.double_colon.line);
                 return;
             },
         };
@@ -88,7 +88,7 @@ impl Rule for ValidStaticCallRule {
                 has_inherited = true;
             } else if ! has_call_static {
                 // TODO: Check if class's docblock has an @method.
-                messages.add(format!("Call to undefined method {}::{}()", class_name, method_name));
+                messages.error(format!("Call to undefined method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
                 return;
             }
         }
@@ -102,13 +102,13 @@ impl Rule for ValidStaticCallRule {
 
         // 6. Check that the method is static.
         if ! method.is_static() {
-            messages.add(format!("Call to non-static method {}::{}()", class_name, method_name));
+            messages.error(format!("Call to non-static method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
             return;
         }
 
         // 7. Check that the method is not abstract.
         if method.is_abstract() {
-            messages.add(format!("Call to abstract method {}::{}()", class_name, method_name));
+            messages.error(format!("Call to abstract method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
             return;
         }
 
@@ -116,7 +116,7 @@ impl Rule for ValidStaticCallRule {
         if method.is_protected() || method.is_private() {
             // If we're not in a class context, then calling a static protected or private method isn't allowed at all.
             if ! context.is_in_class() {
-                messages.add(format!("Call to {} method {}::{}()", if method.is_protected() { "protected" } else if method.is_private() { "private" } else { unreachable!() }, class_name, method_name));
+                messages.error(format!("Call to {} method {}::{}()", if method.is_protected() { "protected" } else if method.is_private() { "private" } else { unreachable!() }, class_name, method_name), static_method_call.double_colon.line);
                 return;
             }
 
@@ -129,13 +129,13 @@ impl Rule for ValidStaticCallRule {
 
             // If we're not in the same class, or if the method is inherited, then calling a private method is disallowed.
             if method.is_private() {
-                messages.add(format!("Call to private method {}::{}()", class_name, method_name));
+                messages.error(format!("Call to private method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
                 return;
             }
 
             // If the method is protected, then we need to check if the current class inherits the method from a class in the inheritance chain.
             if current_class.get_inherited_method(method_name, definitions, context).is_none() {
-                messages.add(format!("Call to protected method {}::{}()", class_name, method_name));
+                messages.error(format!("Call to protected method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
                 return;
             }
         }
