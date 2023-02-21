@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use pxp_parser::{lexer::byte_string::ByteString, parser::ast::{Expression, literals::Literal, variables::{Variable, SimpleVariable}, FunctionCallExpression, identifiers::{Identifier, SimpleIdentifier}}};
+use pxp_parser::{lexer::byte_string::ByteString, parser::ast::{Expression, literals::Literal, variables::{Variable, SimpleVariable}, FunctionCallExpression, identifiers::{Identifier, SimpleIdentifier}, NewExpression}};
 use crate::{shared::types::Type, definitions::collection::DefinitionCollection};
 
 #[derive(Debug, Clone)]
@@ -76,6 +76,15 @@ impl Context {
                 },
                 _ => Type::Mixed,
             },
+            Expression::New(NewExpression { target, .. }) => {
+                match target.as_ref() {
+                    Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value, .. })) => {
+                        let class = definitions.get_class(value, self).unwrap();
+                        Type::Named(class.name.clone())
+                    },
+                    _ => Type::Object,
+                }
+            },
             _ => Type::Mixed,
         }
     }
@@ -84,6 +93,13 @@ impl Context {
         // If the name is already fully qualified, return as is.
         if name.bytes.starts_with(b"\\") {
             return name.clone();
+        }
+
+        if self.is_in_class() && name == self.classish_context() {
+            let mut qualified_name = self.namespace.clone();
+            qualified_name.extend(b"\\");
+            qualified_name.extend(&name.bytes);
+            return qualified_name;
         }
 
         let parts = name.split(|b| *b == b'\\').collect::<Vec<&[u8]>>();
