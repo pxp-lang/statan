@@ -1,4 +1,4 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{MethodCallExpression, Expression, variables::{Variable, SimpleVariable}, identifiers::{Identifier, SimpleIdentifier}}, lexer::byte_string::ByteString};
+use pxp_parser::{node::Node, downcast::downcast, parser::ast::{MethodCallExpression, Expression, variables::{Variable, SimpleVariable}, identifiers::{Identifier, SimpleIdentifier}, arguments::{Argument, PositionalArgument, NamedArgument}}, lexer::byte_string::ByteString};
 
 use crate::{definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}};
 
@@ -70,25 +70,98 @@ impl Rule for ValidThisCallRule {
 
         let method = method_definition.unwrap();
 
-        // 8. If the method is public, return early to avoid unnecessary checks.
-        if method.is_public() {
+        if ! method.is_public() {
+            // 9. Grab the actual context for the method. If the method was inherited, then
+            //    the actual context of the method will be the class where it's defined.
+            let method_class_context = definitions.get_class(classish_context, context).unwrap();
+
+            // 10. If the method's class context matches the current class context, then
+            //     calling a private or protected method is perfectly fine.
+            if class_definition != method_class_context && method.is_private() {
+                messages.error(format!("Call to private method $this->{method_name}()"), method_call_expression.arrow.line);
+                return;
+            }
+        }
+
+        let span = method_call_expression.arrow;
+        let min_arity = method.min_arity();
+        let max_arity = method.max_arity();
+
+        if method_call_expression.arguments.arguments.len() < min_arity {
+            messages.error(format!("Method $this->{}() requires {} arguments, {} given", method_name, min_arity, method_call_expression.arguments.arguments.len()), span.line);
             return;
         }
 
-        // 9. Grab the actual context for the method. If the method was inherited, then
-        //    the actual context of the method will be the class where it's defined.
-        let method_class_context = definitions.get_class(classish_context, context).unwrap();
-
-        // 10. If the method's class context matches the current class context, then
-        //     calling a private or protected method is perfectly fine.
-        if class_definition == method_class_context && ! has_inherited {
+        if method_call_expression.arguments.arguments.len() > max_arity {
+            messages.error(format!("Method $this->{}() requires {} arguments, {} given", method_name, max_arity, method_call_expression.arguments.arguments.len()), span.line);
             return;
         }
 
-        // 11. If the method is private and the contexts do not match, then a private call
-        //     is disallowed.
-        if method.is_private() {
-            messages.error(format!("Call to private method $this->{method_name}()"), method_call_expression.arrow.line);
+        let mut has_encountered_named_argument = false;
+
+        for (position, argument) in method_call_expression.arguments.iter().enumerate() {
+            match argument {
+                Argument::Positional(PositionalArgument { comments: _, ellipsis: _, value }) => {
+                    if has_encountered_named_argument {
+                        messages.error("Positional argument cannot follow named argument", span.line);
+                        continue;
+                    }
+                    
+                    // We've already checked that the number of arguments is within the range of the function's arity,
+                    // so we can safely unwrap the parameter.
+                    let parameter = method.get_parameter_by_position(position).unwrap();
+
+                    // If parameter has no type, we can't check it.
+                    if parameter.type_.is_none() {
+                        continue;
+                    }
+
+                    let parameter_type = parameter.type_.as_ref().unwrap();
+                    let argument_type = context.get_type(value, definitions);
+
+                    if ! parameter_type.compatible(&argument_type) {
+                        // Doesn't make sense to zero-index the position, so we add 1.
+                        messages.error(format!("Argument {} of type {} is not compatible with parameter {} of type {}", position + 1, argument_type, parameter.name, parameter_type), span.line);
+                    }
+                },
+                Argument::Named(NamedArgument { comments: _, name, colon: _, ellipsis: _, value }) => {
+                    has_encountered_named_argument = true;
+
+                    let mut parameter = method.get_parameter_by_name(&name.value);
+
+                    // TODO: Check if the parameter is a spread parameter.
+                    if parameter.is_none() {
+                        match method.get_parameter_by_position(position) {
+                            Some(p) => {
+                                if p.spread {
+                                    parameter = Some(p);
+                                } else {
+                                    messages.error(format!("Method $this->{method_name}() does not have a parameter named {name}"), span.line);
+                                    continue;
+                                }
+                            },
+                            None => {
+                                messages.error(format!("Method $this->{method_name}() does not have a parameter named {name}"), span.line);
+                                continue;
+                            },
+                        }
+                    }
+
+                    let parameter = parameter.unwrap();
+
+                    // If parameter has no type, we can't check it.
+                    if parameter.type_.is_none() {
+                        continue;
+                    }
+
+                    let parameter_type = parameter.type_.as_ref().unwrap();
+                    let argument_type = context.get_type(value, definitions);
+
+                    if ! parameter_type.compatible(&argument_type) {
+                        messages.error(format!("Argument {} of type {} is not compatible with parameter {} of type {}", name, argument_type, parameter.name, parameter_type), span.line);
+                    }
+                },
+            }
         }
     }
 }
