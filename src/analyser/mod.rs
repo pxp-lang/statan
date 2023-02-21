@@ -1,4 +1,4 @@
-use pxp_parser::{parse, traverser::Visitor, node::Node, parser::ast::{UseStatement, Use, GroupUseStatement, namespaces::{UnbracedNamespace, BracedNamespace}, identifiers::SimpleIdentifier, Statement, classes::ClassStatement}, lexer::byte_string::ByteString, downcast::downcast};
+use pxp_parser::{parse, traverser::Visitor, node::Node, parser::ast::{UseStatement, Use, GroupUseStatement, namespaces::{UnbracedNamespace, BracedNamespace}, identifiers::SimpleIdentifier, classes::ClassStatement}, lexer::byte_string::ByteString, downcast::downcast};
 
 use crate::{definitions::collection::DefinitionCollection, rules::Rule};
 

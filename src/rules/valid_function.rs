@@ -50,7 +50,7 @@ impl Rule for ValidFunctionRule {
 
         for (position, argument) in function_call_expression.arguments.iter().enumerate() {
             match argument {
-                Argument::Positional(PositionalArgument { comments, ellipsis, value }) => {
+                Argument::Positional(PositionalArgument { comments: _, ellipsis: _, value }) => {
                     if has_encountered_named_argument {
                         messages.error(format!("Positional argument cannot follow named argument"), span.line);
                         continue;
@@ -73,7 +73,7 @@ impl Rule for ValidFunctionRule {
                         messages.error(format!("Argument {} of type {} is not compatible with parameter {} of type {}", position + 1, argument_type, parameter.name, parameter_type), span.line);
                     }
                 },
-                Argument::Named(NamedArgument { comments, name, colon, ellipsis, value }) => {
+                Argument::Named(NamedArgument { comments: _, name, colon: _, ellipsis: _, value }) => {
                     has_encountered_named_argument = true;
 
                     let mut parameter = definition.get_parameter_by_name(&name.value);
