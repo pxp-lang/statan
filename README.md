@@ -45,10 +45,10 @@ statan analyse src/example.php # Analyse a single file
 statan analyse src/            # Analyse a directory
 ```
 
-The binary does not ship with stubs or definitions for PHP's native functions, classes or interfaces. In order for Statan to discover and understand those definitions, you must install a third-party stubs package in your project. We recommend using the [PhpStorm stubs](https://github.com/JetBrains/phpstorm-stubs) provided by Jetbrains.
+The binary does not ship with stubs or definitions for PHP's native functions, classes or interfaces. In order for Statan to discover and understand those definitions, you must install a third-party stubs package in your project. We recommend using the [stubs provided by PHPStan](https://github.com/phpstan/php-8-stubs).
 
 ```sh
-composer require jetbrains/phpstorm-stubs --dev
+composer require phpstan/php-8-stubs --dev
 ```
 
 ## Contributing
