@@ -1,4 +1,4 @@
-use pxp_parser::{node::Node, parser::ast::{StaticMethodCallExpression, Expression, identifiers::{Identifier, SimpleIdentifier}}, downcast::downcast, lexer::byte_string::ByteString};
+use pxp_parser::{node::Node, parser::ast::{StaticMethodCallExpression, Expression, identifiers::{Identifier, SimpleIdentifier}, arguments::{Argument, PositionalArgument, NamedArgument}}, downcast::downcast, lexer::byte_string::ByteString};
 
 use crate::{definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}};
 
@@ -66,7 +66,7 @@ impl Rule for ValidStaticCallRule {
         };
 
         // 3. Get the class definition from the definitions collection.
-        let class = match definitions.get_class(class_name, context) {
+        let mut class = match definitions.get_class(class_name, context) {
             Some(class) => class,
             None => {
                 messages.error(format!("Call to {class_name}::{method_name}() on unknown class {class_name}"), static_method_call.double_colon.line);
@@ -85,6 +85,7 @@ impl Rule for ValidStaticCallRule {
             if let Some((inherited_method_from, inherited_method)) = class.get_inherited_method(method_name, definitions, context) {
                 method = Some(inherited_method);
                 class_name = inherited_method_from;
+                class = definitions.get_class(class_name, context).unwrap();
                 has_inherited = true;
             } else if ! has_call_static {
                 // TODO: Check if class's docblock has an @method.
@@ -107,6 +108,7 @@ impl Rule for ValidStaticCallRule {
         }
 
         // 7. Check that the method is not abstract.
+        // TODO: We should allow calling an abstract method as long as you're inside an abstract context.
         if method.is_abstract() {
             messages.error(format!("Call to abstract method {class_name}::{method_name}()"), static_method_call.double_colon.line);
             return;
@@ -122,20 +124,97 @@ impl Rule for ValidStaticCallRule {
 
             let current_class = definitions.get_class(context.classish_context(), context).unwrap();
 
-            // If the current class is the same as the class that the method is being called on, then we're good.
-            if current_class == class && ! has_inherited {
-                return;
-            }
-
             // If we're not in the same class, or if the method is inherited, then calling a private method is disallowed.
-            if method.is_private() {
+            if current_class != class && has_inherited && method.is_private() {
                 messages.error(format!("Call to private method {class_name}::{method_name}()"), static_method_call.double_colon.line);
                 return;
             }
 
             // If the method is protected, then we need to check if the current class inherits the method from a class in the inheritance chain.
-            if current_class.get_inherited_method(method_name, definitions, context).is_none() {
+            if method.is_protected() && current_class.get_inherited_method(method_name, definitions, context).is_none() {
                 messages.error(format!("Call to protected method {class_name}::{method_name}()"), static_method_call.double_colon.line);
+                return;
+            }
+        }
+
+        let span = static_method_call.double_colon;
+        let min_arity = method.min_arity();
+        let max_arity = method.max_arity();
+
+        if static_method_call.arguments.arguments.len() < min_arity {
+            messages.error(format!("Method {class_name}::{method_name}() requires {} arguments, {} given", min_arity, static_method_call.arguments.arguments.len()), span.line);
+            return;
+        }
+
+        if static_method_call.arguments.arguments.len() > max_arity {
+            messages.error(format!("Method {class_name}::{}() requires {} arguments, {} given", method_name, max_arity, static_method_call.arguments.arguments.len()), span.line);
+            return;
+        }
+
+        let mut has_encountered_named_argument = false;
+
+        for (position, argument) in static_method_call.arguments.iter().enumerate() {
+            match argument {
+                Argument::Positional(PositionalArgument { comments: _, ellipsis: _, value }) => {
+                    if has_encountered_named_argument {
+                        messages.error("Positional argument cannot follow named argument", span.line);
+                        continue;
+                    }
+                    
+                    // We've already checked that the number of arguments is within the range of the function's arity,
+                    // so we can safely unwrap the parameter.
+                    let parameter = method.get_parameter_by_position(position).unwrap();
+
+                    // If parameter has no type, we can't check it.
+                    if parameter.type_.is_none() {
+                        continue;
+                    }
+
+                    let parameter_type = parameter.type_.as_ref().unwrap();
+                    let argument_type = context.get_type(value, definitions);
+
+                    if ! parameter_type.compatible(&argument_type) {
+                        // Doesn't make sense to zero-index the position, so we add 1.
+                        messages.error(format!("Argument {} of type {} is not compatible with parameter {} of type {}", position + 1, argument_type, parameter.name, parameter_type), span.line);
+                    }
+                },
+                Argument::Named(NamedArgument { comments: _, name, colon: _, ellipsis: _, value }) => {
+                    has_encountered_named_argument = true;
+
+                    let mut parameter = method.get_parameter_by_name(&name.value);
+
+                    // TODO: Check if the parameter is a spread parameter.
+                    if parameter.is_none() {
+                        match method.get_parameter_by_position(position) {
+                            Some(p) => {
+                                if p.spread {
+                                    parameter = Some(p);
+                                } else {
+                                    messages.error(format!("Method $this->{method_name}() does not have a parameter named {name}"), span.line);
+                                    continue;
+                                }
+                            },
+                            None => {
+                                messages.error(format!("Method $this->{method_name}() does not have a parameter named {name}"), span.line);
+                                continue;
+                            },
+                        }
+                    }
+
+                    let parameter = parameter.unwrap();
+
+                    // If parameter has no type, we can't check it.
+                    if parameter.type_.is_none() {
+                        continue;
+                    }
+
+                    let parameter_type = parameter.type_.as_ref().unwrap();
+                    let argument_type = context.get_type(value, definitions);
+
+                    if ! parameter_type.compatible(&argument_type) {
+                        messages.error(format!("Argument {} of type {} is not compatible with parameter {} of type {}", name, argument_type, parameter.name, parameter_type), span.line);
+                    }
+                },
             }
         }
     }

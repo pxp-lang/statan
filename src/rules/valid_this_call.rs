@@ -46,16 +46,14 @@ impl Rule for ValidThisCallRule {
 
         // 6. Get the method definition from the class.
         let mut method_definition = class_definition.get_method(method_name, definitions, context);
-        let mut has_inherited = false;
         let call_magic = &ByteString::from(b"__call");
-        let has_call_magic = class_definition.get_method(call_magic, definitions, context).is_some();
+        let has_call_magic = class_definition.get_method(call_magic, definitions, context).is_some() || class_definition.get_inherited_method(call_magic, definitions, context).is_some();
 
         // 7. Check that the method exists.
         if method_definition.is_none() {
             if let Some((inherited_method_from, inherited_method)) = class_definition.get_inherited_method(method_name, definitions, context) {
                 method_definition = Some(inherited_method);
                 classish_context = inherited_method_from;
-                has_inherited = true;
             } else if ! has_call_magic {
                 // TODO: Check if class's docblock has an @method.
                 messages.error(format!("Call to undefined method $this->{method_name}() on {classish_context}"), method_call_expression.arrow.line);
