@@ -28,6 +28,24 @@ impl FunctionDefinition {
             self.parameters.len()
         }
     }
+
+    pub fn get_parameter_by_position(&self, position: usize) -> Option<&Parameter> {
+        if position >= self.parameters.len() {
+            self.parameters.last()
+        } else {
+            self.parameters.get(position)
+        }
+    }
+
+    pub fn get_parameter_by_name(&self, name: &ByteString) -> Option<&Parameter> {
+        let mut name = name.clone();
+
+        if ! name.starts_with(&[b'$']) {
+            name.bytes.insert(0, b'$');
+        }
+
+        self.parameters.iter().find(|p| p.name == name)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

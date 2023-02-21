@@ -57,7 +57,9 @@ impl Context {
             Expression::Literal(Literal::String(_)) => Type::String,
             Expression::Bool(_) => Type::Bool,
             Expression::Null => Type::Null,
-            Expression::Variable(Variable::SimpleVariable(SimpleVariable { name, .. })) => self.variables.get(name).cloned().unwrap(),
+            Expression::Variable(Variable::SimpleVariable(SimpleVariable { name, .. })) => {
+                self.variables.get(name).cloned().unwrap_or(Type::Mixed)
+            },
             Expression::FunctionCall(FunctionCallExpression { target, .. }) => match target.as_ref() {
                 Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value: function_name, .. })) => {
                     if let Some(function_definition) = definitions.get_function(function_name, self) {

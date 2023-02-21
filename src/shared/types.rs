@@ -28,6 +28,40 @@ pub enum Type {
     Never,
 }
 
+impl Type {
+    pub fn compatible(&self, other: &Type) -> bool {
+        if other == &Type::Mixed {
+            return true;
+        }
+        
+        match self {
+            Type::String => other == &Type::String,
+            Type::Int => other == &Type::Int,
+            Type::Float => other == &Type::Float,
+            Type::Array => other == &Type::Array,
+            Type::Mixed => true,
+            Type::Bool => other == &Type::Bool || other == &Type::True || other == &Type::False,
+            Type::Object => other == &Type::Object || matches!(other, Type::Named(_)),
+            Type::Void => other == &Type::Void || other == &Type::Null,
+            Type::False => other == &Type::False,
+            Type::True => other == &Type::True,
+            Type::Null => other == &Type::Null || matches!(other, Type::Nullable(_)),
+            Type::Callable => other == &Type::Callable,
+            Type::Static => todo!(),
+            Type::Self_ => todo!(),
+            Type::Parent => todo!(),
+            // FIXME: Add a \Traversable check here too.
+            Type::Iterable => other == &Type::Iterable,
+            Type::Nullable(ty) => other == &Type::Null || ty.compatible(other),
+            // FIXME: Also need to check variance of the type as well.
+            Type::Named(_) => self == other,
+            Type::Union(ty) => ty.iter().any(|ty| ty.compatible(other)),
+            Type::Intersection(ty) => ty.iter().all(|ty| ty.compatible(other)),
+            Type::Never => false,
+        }
+    }
+}
+
 impl Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

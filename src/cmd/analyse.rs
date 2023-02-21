@@ -29,6 +29,8 @@ pub fn run(args: AnalyseCommand) {
 
     let collection = collector.collect();
 
+    std::fs::write("./collection.json", serde_json::to_string_pretty(&collection).unwrap()).unwrap();
+
     let mut analyser = Analyser::new(collection);
     analyser.add_rule(Box::new(rules::valid_assignment::ValidAssignmentRule));
     analyser.add_rule(Box::new(rules::dump_type::DumpTypeRule));
