@@ -53,14 +53,11 @@ impl Visitor<()> for Analyser {
         let mut context = self.context_stack.last_mut().unwrap().clean();
         let mut did_push_context = false;
 
-        match downcast(node) {
-            Some(ClassStatement { name, ..}) => {
-                context.set_classish_context(&name.value);
-                self.context_stack.push(context);
-                did_push_context = true;
-            },
-            None => {},
-        };
+        if let Some(ClassStatement { name, .. }) = downcast(node) {
+            context.set_classish_context(&name.value);
+            self.context_stack.push(context);
+            did_push_context = true;
+        }
 
         for child in node.children() {
             self.visit_node(child)?;

@@ -48,17 +48,13 @@ impl ClassDefinition {
 
     pub fn get_inherited_method<'a>(&'a self, name: &ByteString, definitions: &'a DefinitionCollection, context: &Context) -> Option<(&'a ByteString, &'a MethodDefinition)> {
         // If we don't extend a class, then we can return early.
-        if self.extends.is_none() {
-            return None;
-        }
+        self.extends.as_ref()?;
 
         // Get the class we extend.
         let extends_class = self.extends.as_ref().unwrap();
-        let extends = definitions.get_class(&extends_class, &context);
+        let extends = definitions.get_class(extends_class, context);
 
-        if extends.is_none() {
-            return None;
-        }
+        extends?;
 
         let extends = extends.unwrap();
 
@@ -66,8 +62,8 @@ impl ClassDefinition {
         let optional_method = extends.get_method(name, definitions, context);
 
         // If we found the method, return it.
-        if optional_method.is_some() {
-            return Some((extends_class, optional_method.unwrap()));
+        if let Some(method) = optional_method {
+            return Some((extends_class, method));
         }
 
         // Otherwise, we need to check if the parent class inherits the method.

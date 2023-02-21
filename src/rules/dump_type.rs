@@ -1,4 +1,4 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{FunctionCallExpression, identifiers::Identifier, Expression, arguments::Argument}, lexer::byte_string::ByteString};
+use pxp_parser::{node::Node, downcast::downcast, parser::ast::{FunctionCallExpression, identifiers::Identifier, Expression, arguments::Argument}};
 
 use crate::{analyser::{context::Context, messages::MessageCollector}, definitions::collection::DefinitionCollection};
 
@@ -20,7 +20,7 @@ impl Rule for DumpTypeRule {
             _ => return,
         };
 
-        if function_name != ByteString::from(b"\\Statan\\dumpType") {
+        if function_name != b"\\Statan\\dumpType" {
             return;
         }
 
@@ -38,6 +38,6 @@ impl Rule for DumpTypeRule {
 
         let ty = context.get_type(&argument.value, definitions);
 
-        messages.note(format!("Dumped type: {}", ty), function_call_expression.arguments.left_parenthesis.line);
+        messages.note(format!("Dumped type: {ty}"), function_call_expression.arguments.left_parenthesis.line);
     }
 }

@@ -52,7 +52,7 @@ impl Rule for ValidFunctionRule {
             match argument {
                 Argument::Positional(PositionalArgument { comments: _, ellipsis: _, value }) => {
                     if has_encountered_named_argument {
-                        messages.error(format!("Positional argument cannot follow named argument"), span.line);
+                        messages.error("Positional argument cannot follow named argument", span.line);
                         continue;
                     }
                     
@@ -85,12 +85,12 @@ impl Rule for ValidFunctionRule {
                                 if p.spread {
                                     parameter = Some(p);
                                 } else {
-                                    messages.error(format!("Function {}() does not have a parameter named {}", function_name, name), span.line);
+                                    messages.error(format!("Function {function_name}() does not have a parameter named {name}"), span.line);
                                     continue;
                                 }
                             },
                             None => {
-                                messages.error(format!("Function {}() does not have a parameter named {}", function_name, name), span.line);
+                                messages.error(format!("Function {function_name}() does not have a parameter named {name}"), span.line);
                                 continue;
                             },
                         }

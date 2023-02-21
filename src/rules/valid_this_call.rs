@@ -34,7 +34,7 @@ impl Rule for ValidThisCallRule {
         // 3. Check if currently inside of a classish context.
         // TODO: We should also calling $this->foo() inside of a Closure since it could be bound to an object.
         if ! context.is_in_class() {
-            messages.error(format!("Calling $this->{}() outside of class context", method_name), method_call_expression.arrow.line);
+            messages.error(format!("Calling $this->{method_name}() outside of class context"), method_call_expression.arrow.line);
             return;
         }
 
@@ -42,7 +42,7 @@ impl Rule for ValidThisCallRule {
         let mut classish_context = context.classish_context();
 
         // 5. Get the current class definition.
-        let class_definition = definitions.get_class(classish_context, &context).unwrap();
+        let class_definition = definitions.get_class(classish_context, context).unwrap();
 
         // 6. Get the method definition from the class.
         let mut method_definition = class_definition.get_method(method_name, definitions, context);
@@ -58,11 +58,7 @@ impl Rule for ValidThisCallRule {
                 has_inherited = true;
             } else if ! has_call_magic {
                 // TODO: Check if class's docblock has an @method.
-                messages.error(format!(
-                    "Call to undefined method $this->{}() on {}",
-                    method_name,
-                    classish_context,
-                ), method_call_expression.arrow.line);
+                messages.error(format!("Call to undefined method $this->{method_name}() on {classish_context}"), method_call_expression.arrow.line);
                 return;
             }
         }
@@ -73,18 +69,6 @@ impl Rule for ValidThisCallRule {
         }
 
         let method = method_definition.unwrap();
-
-        // 7. Check if method is static.
-        // TODO: This is actually valid PHP code, but we should probably warn about it when we can.
-        if method.is_static() {
-            messages.error(format!(
-                "Calling $this->{}() but {} is a static method",
-                method_name,
-                method_name,
-            ), method_call_expression.arrow.line);
-        }
-
-        // TODO: Do we need some magic logic here for handling abstract calls?
 
         // 8. If the method is public, return early to avoid unnecessary checks.
         if method.is_public() {
@@ -104,11 +88,7 @@ impl Rule for ValidThisCallRule {
         // 11. If the method is private and the contexts do not match, then a private call
         //     is disallowed.
         if method.is_private() {
-            messages.error(format!(
-                "Call to private method $this->{}()",
-                method_name,
-            ), method_call_expression.arrow.line);
-            return;
+            messages.error(format!("Call to private method $this->{method_name}()"), method_call_expression.arrow.line);
         }
     }
 }

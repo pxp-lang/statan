@@ -29,7 +29,7 @@ impl Rule for ValidStaticCallRule {
             Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value, .. })) => value,
             Expression::Self_ => {
                 if ! context.is_in_class() {
-                    messages.error(format!("Calling self::{}() outside of class context", method_name), static_method_call.double_colon.line);
+                    messages.error(format!("Calling self::{method_name}() outside of class context"), static_method_call.double_colon.line);
                     return;
                 }
 
@@ -37,7 +37,7 @@ impl Rule for ValidStaticCallRule {
             },
             Expression::Static => {
                 if ! context.is_in_class() {
-                    messages.error(format!("Calling static::{}() outside of class context", method_name), static_method_call.double_colon.line);
+                    messages.error(format!("Calling static::{method_name}() outside of class context"), static_method_call.double_colon.line);
                     return;
                 }
 
@@ -45,11 +45,11 @@ impl Rule for ValidStaticCallRule {
             },
             Expression::Parent => {
                 if ! context.is_in_class() {
-                    messages.error(format!("Calling parent::{}() outside of class context", method_name), static_method_call.double_colon.line);
+                    messages.error(format!("Calling parent::{method_name}() outside of class context"), static_method_call.double_colon.line);
                     return;
                 }
 
-                let child_class = definitions.get_class(context.classish_context(), &context).unwrap();
+                let child_class = definitions.get_class(context.classish_context(), context).unwrap();
                 
                 if child_class.extends.is_none() {
                     messages.error(format!(
@@ -66,10 +66,10 @@ impl Rule for ValidStaticCallRule {
         };
 
         // 3. Get the class definition from the definitions collection.
-        let class = match definitions.get_class(class_name, &context) {
+        let class = match definitions.get_class(class_name, context) {
             Some(class) => class,
             None => {
-                messages.error(format!("Call to {}::{}() on unknown class {}", class_name, method_name, class_name), static_method_call.double_colon.line);
+                messages.error(format!("Call to {class_name}::{method_name}() on unknown class {class_name}"), static_method_call.double_colon.line);
                 return;
             },
         };
@@ -88,7 +88,7 @@ impl Rule for ValidStaticCallRule {
                 has_inherited = true;
             } else if ! has_call_static {
                 // TODO: Check if class's docblock has an @method.
-                messages.error(format!("Call to undefined method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
+                messages.error(format!("Call to undefined method {class_name}::{method_name}()"), static_method_call.double_colon.line);
                 return;
             }
         }
@@ -102,13 +102,13 @@ impl Rule for ValidStaticCallRule {
 
         // 6. Check that the method is static.
         if ! method.is_static() {
-            messages.error(format!("Call to non-static method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
+            messages.error(format!("Call to non-static method {class_name}::{method_name}()"), static_method_call.double_colon.line);
             return;
         }
 
         // 7. Check that the method is not abstract.
         if method.is_abstract() {
-            messages.error(format!("Call to abstract method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
+            messages.error(format!("Call to abstract method {class_name}::{method_name}()"), static_method_call.double_colon.line);
             return;
         }
 
@@ -120,7 +120,7 @@ impl Rule for ValidStaticCallRule {
                 return;
             }
 
-            let current_class = definitions.get_class(context.classish_context(), &context).unwrap();
+            let current_class = definitions.get_class(context.classish_context(), context).unwrap();
 
             // If the current class is the same as the class that the method is being called on, then we're good.
             if current_class == class && ! has_inherited {
@@ -129,14 +129,13 @@ impl Rule for ValidStaticCallRule {
 
             // If we're not in the same class, or if the method is inherited, then calling a private method is disallowed.
             if method.is_private() {
-                messages.error(format!("Call to private method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
+                messages.error(format!("Call to private method {class_name}::{method_name}()"), static_method_call.double_colon.line);
                 return;
             }
 
             // If the method is protected, then we need to check if the current class inherits the method from a class in the inheritance chain.
             if current_class.get_inherited_method(method_name, definitions, context).is_none() {
-                messages.error(format!("Call to protected method {}::{}()", class_name, method_name), static_method_call.double_colon.line);
-                return;
+                messages.error(format!("Call to protected method {class_name}::{method_name}()"), static_method_call.double_colon.line);
             }
         }
     }
