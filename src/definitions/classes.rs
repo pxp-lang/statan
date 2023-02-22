@@ -23,6 +23,10 @@ impl ClassDefinition {
         self.modifiers.iter().any(|m| m == &Modifier::Abstract)
     }
 
+    pub fn is_final(&self) -> bool {
+        self.modifiers.iter().any(|m| m == &Modifier::Final)
+    }
+
     pub fn get_method<'a>(&'a self, name: &ByteString, definitions: &'a DefinitionCollection, context: &Context) -> Option<&'a MethodDefinition> {
         self.methods.iter()
             .find(|m| m.name == *name)

@@ -39,6 +39,7 @@ pub fn run(args: AnalyseCommand) {
     analyser.add_rule(Box::new(rules::valid_static_call::ValidStaticCallRule));
     analyser.add_rule(Box::new(rules::valid_this_call::ValidThisCallRule));
     analyser.add_rule(Box::new(rules::abstract_method_in_non_abstract_class::AbstractMethodInNonAbstractClassRule));
+    analyser.add_rule(Box::new(rules::call_private_through_static::CallPrivateThroughStaticRule));
 
     let mut message_collections = Vec::new();
     let metadata = metadata(&args.file).unwrap();

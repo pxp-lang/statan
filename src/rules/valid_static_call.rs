@@ -108,13 +108,12 @@ impl Rule for ValidStaticCallRule {
         }
 
         // 7. Check that the method is not abstract.
-        // TODO: We should allow calling an abstract method as long as you're inside an abstract context.
-        if method.is_abstract() {
+        if method.is_abstract() && ! class.is_abstract() {
             messages.error(format!("Call to abstract method {class_name}::{method_name}()"), static_method_call.double_colon.line);
             return;
         }
 
-        // 8. If the method is public, return early to avoid unnecessary checks.
+        // 8. If the method is not public, we need to do additional visibility checks.
         if method.is_protected() || method.is_private() {
             // If we're not in a class context, then calling a static protected or private method isn't allowed at all.
             if ! context.is_in_class() {
@@ -131,7 +130,7 @@ impl Rule for ValidStaticCallRule {
             }
 
             // If the method is protected, then we need to check if the current class inherits the method from a class in the inheritance chain.
-            if method.is_protected() && current_class.get_inherited_method(method_name, definitions, context).is_none() {
+            if method.is_protected() && ! has_inherited && current_class != class {
                 messages.error(format!("Call to protected method {class_name}::{method_name}()"), static_method_call.double_colon.line);
                 return;
             }
