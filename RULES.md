@@ -4,4 +4,6 @@ This document contains a list of all rules that Statan currently supports. Each 
 
 ## Table of Contents
 
-> TODO
+* [`ValidFunctionRule`](#valid-function-rule)
+
+### `ValidFunctionRule`
