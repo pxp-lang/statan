@@ -10,6 +10,7 @@ pub mod valid_static_call;
 pub mod dump_type;
 pub mod valid_this_call;
 pub mod valid_assignment;
+pub mod abstract_method_in_non_abstract_class;
 
 pub trait Rule: Debug {
     fn should_run(&self, node: &dyn Node) -> bool;
