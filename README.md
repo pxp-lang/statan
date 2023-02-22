@@ -51,6 +51,12 @@ The binary does not ship with stubs or definitions for PHP's native functions, c
 composer require phpstan/php-8-stubs --dev
 ```
 
+## Rules
+
+To learn about the things that Statan is currently capable of checking, please refer to the [RULES](./RULES.md) document. There you'll find a list of each of the rules, as well as sample code to demonstrate what issues they can catch.
+
+If you have an idea for a new rule, please [open an issue](/issues/new) with a brief description of the rule as well as a code sample demonstrating the issue it is designed to catch.
+
 ## Contributing
 
 You can contribute to Statan in a couple of different ways.
