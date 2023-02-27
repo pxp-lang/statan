@@ -29,7 +29,7 @@ pub fn run(args: AnalyseCommand) {
 
     let collection = collector.collect();
 
-    std::fs::write("./collection.json", serde_json::to_string_pretty(&collection).unwrap()).unwrap();
+    // std::fs::write("./collection.json", serde_json::to_string_pretty(&collection).unwrap()).unwrap();
 
     let mut analyser = Analyser::new(collection);
     analyser.add_rule(Box::new(rules::valid_assignment::ValidAssignmentRule));
@@ -40,6 +40,7 @@ pub fn run(args: AnalyseCommand) {
     analyser.add_rule(Box::new(rules::valid_this_call::ValidThisCallRule));
     analyser.add_rule(Box::new(rules::abstract_method_in_non_abstract_class::AbstractMethodInNonAbstractClassRule));
     analyser.add_rule(Box::new(rules::call_private_through_static::CallPrivateThroughStaticRule));
+    analyser.add_rule(Box::new(rules::function_definition::FunctionDefinitionRule));
 
     let mut message_collections = Vec::new();
     let metadata = metadata(&args.file).unwrap();
