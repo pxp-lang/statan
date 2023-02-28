@@ -275,6 +275,7 @@ impl Context {
                 _ => todo!(),
             },
             Expression::Noop => todo!(),
+            _ => Type::Mixed,
         }
     }
 
