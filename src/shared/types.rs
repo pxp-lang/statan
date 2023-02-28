@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use pxp_parser::lexer::byte_string::ByteString;
+use pxp_parser::{lexer::byte_string::ByteString, parser::ast::data_type::Type as ParsedType};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -27,6 +27,40 @@ pub enum Type {
     Intersection(Vec<Self>),
     Never,
     Error,
+}
+
+impl From<&ParsedType> for Type {
+    fn from(value: &ParsedType) -> Self {
+        value.clone().into()
+    }
+}
+
+impl From<ParsedType> for Type {
+    fn from(value: ParsedType) -> Self {
+        match value {
+            ParsedType::Named(_, t) => Self::Named(t),
+            ParsedType::Nullable(_, t) => Self::Nullable(Box::new(t.as_ref().into())),
+            ParsedType::Union(tys) => Self::Union(tys.into_iter().map(|t| t.into()).collect()),
+            ParsedType::Intersection(tys) => Self::Intersection(tys.into_iter().map(|t| t.into()).collect()),
+            ParsedType::Void(_) => Self::Void,
+            ParsedType::Null(_) => Self::Null,
+            ParsedType::True(_) => Self::True,
+            ParsedType::False(_) => Self::False,
+            ParsedType::Never(_) => Self::Never,
+            ParsedType::Float(_) => Self::Float,
+            ParsedType::Boolean(_) => Self::Bool,
+            ParsedType::Integer(_) => Self::Int,
+            ParsedType::String(_) => Self::String,
+            ParsedType::Array(_) => Self::Array,
+            ParsedType::Object(_) => Self::Object,
+            ParsedType::Mixed(_) => Self::Mixed,
+            ParsedType::Callable(_) => Self::Callable,
+            ParsedType::Iterable(_) => Self::Iterable,
+            ParsedType::StaticReference(_) => Self::Static,
+            ParsedType::SelfReference(_) => Self::Self_,
+            ParsedType::ParentReference(_) => Self::Parent,
+        }
+    }
 }
 
 impl Type {

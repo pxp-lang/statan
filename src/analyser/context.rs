@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use pxp_parser::{lexer::byte_string::ByteString, parser::ast::{Expression, literals::Literal, variables::{Variable, SimpleVariable}, FunctionCallExpression, identifiers::{Identifier, SimpleIdentifier}, NewExpression, operators::ArithmeticOperationExpression}};
+use pxp_parser::{lexer::byte_string::ByteString, parser::ast::{Expression, literals::Literal, variables::{Variable, SimpleVariable}, FunctionCallExpression, identifiers::{Identifier, SimpleIdentifier}, NewExpression, operators::{ArithmeticOperationExpression, ComparisonOperationExpression, AssignmentOperationExpression}, ErrorSuppressExpression, ParenthesizedExpression, MagicConstantExpression, functions::{ArrowFunctionExpression, ClosureExpression}, ReferenceExpression, CloneExpression, CastExpression, MatchExpression, MatchArmBody, DefaultMatchArm, ShortMatchExpression}};
 use crate::{shared::types::Type, definitions::collection::DefinitionCollection};
 
 #[derive(Debug, Clone)]
@@ -85,6 +85,11 @@ impl Context {
                     _ => Type::Object,
                 }
             },
+            Expression::LogicalOperation(_) => Type::Bool,
+            Expression::ComparisonOperation(operation) => match operation {
+                ComparisonOperationExpression::Spaceship { .. } => Type::Int,
+                _ => Type::Bool,
+            },
             Expression::ArithmeticOperation(operation) => match operation {
                 ArithmeticOperationExpression::Addition { left, right, .. } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
                     (Type::Float, Type::Int | Type::Float) => Type::Float,
@@ -109,50 +114,167 @@ impl Context {
                     (Type::Float | Type::Int, Type::Int | Type::Float) => Type::Union(vec![Type::Float, Type::Int]),
                     _ => Type::Error,
                 },
-                ArithmeticOperationExpression::Modulo { left, percent, right } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
+                ArithmeticOperationExpression::Modulo { left, right, .. } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
                     (Type::Float | Type::Int, Type::Int | Type::Float) => Type::Int,
                     _ => Type::Error,
                 },
-                ArithmeticOperationExpression::Exponentiation { left, pow, right } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
+                ArithmeticOperationExpression::Exponentiation { left, right, .. } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
                     (Type::Float | Type::Int, Type::Int | Type::Float) => Type::Union(vec![Type::Float, Type::Int]),
                     _ => Type::Error,
                 },
-                ArithmeticOperationExpression::Negative { minus, right } => match self.get_type(right.as_ref(), definitions) {
+                ArithmeticOperationExpression::Negative { right, .. } => match self.get_type(right.as_ref(), definitions) {
                     Type::Float => Type::Float,
                     Type::Int => Type::Int,
                     _ => Type::Error,
                 },
-                ArithmeticOperationExpression::Positive { plus, right } => match self.get_type(right.as_ref(), definitions) {
+                ArithmeticOperationExpression::Positive { right, .. } => match self.get_type(right.as_ref(), definitions) {
                     Type::Float => Type::Float,
                     Type::Int => Type::Int,
                     _ => Type::Error,
                 }
-                ArithmeticOperationExpression::PreIncrement { increment, right } => match self.get_type(right.as_ref(), definitions) {
-                    Type::Float => Type::Float,
-                    Type::Int => Type::Int,
-                    Type::String => Type::String,
-                    _ => Type::Error,
-                }
-                ArithmeticOperationExpression::PostIncrement { left, increment } => match self.get_type(left.as_ref(), definitions) {
+                ArithmeticOperationExpression::PreIncrement { right, .. } => match self.get_type(right.as_ref(), definitions) {
                     Type::Float => Type::Float,
                     Type::Int => Type::Int,
                     Type::String => Type::String,
                     _ => Type::Error,
                 }
-                ArithmeticOperationExpression::PreDecrement { decrement, right } => match self.get_type(right.as_ref(), definitions) {
+                ArithmeticOperationExpression::PostIncrement { left, .. } => match self.get_type(left.as_ref(), definitions) {
                     Type::Float => Type::Float,
                     Type::Int => Type::Int,
                     Type::String => Type::String,
                     _ => Type::Error,
                 }
-                ArithmeticOperationExpression::PostDecrement { left, decrement } => match self.get_type(left.as_ref(), definitions) {
+                ArithmeticOperationExpression::PreDecrement { right, .. } => match self.get_type(right.as_ref(), definitions) {
+                    Type::Float => Type::Float,
+                    Type::Int => Type::Int,
+                    Type::String => Type::String,
+                    _ => Type::Error,
+                }
+                ArithmeticOperationExpression::PostDecrement { left, .. } => match self.get_type(left.as_ref(), definitions) {
                     Type::Float => Type::Float,
                     Type::Int => Type::Int,
                     Type::String => Type::String,
                     _ => Type::Error,
                 }
             },
-            _ => Type::Mixed,
+            Expression::Die(_) | Expression::Exit(_) => Type::Never,
+            Expression::Eval(_) => Type::Mixed,
+            Expression::Empty(_) | Expression::Isset(_) => Type::Bool,
+            Expression::Unset(_) => Type::Void,
+            Expression::Print(_) => Type::Int,
+            Expression::ErrorSuppress(ErrorSuppressExpression { expr, .. }) => self.get_type(expr, definitions),
+            Expression::Parenthesized(ParenthesizedExpression { expr, .. }) => self.get_type(expr, definitions),
+            Expression::Include(_) | Expression::IncludeOnce(_) | Expression::Require(_) | Expression::RequireOnce(_) => Type::Mixed,
+            Expression::AssignmentOperation(operation) => match operation {
+                AssignmentOperationExpression::Assign { right, .. } => self.get_type(right.as_ref(), definitions),
+                AssignmentOperationExpression::Addition { left, plus_equals, right } => todo!(),
+                AssignmentOperationExpression::Subtraction { left, minus_equals, right } => todo!(),
+                AssignmentOperationExpression::Multiplication { left, asterisk_equals, right } => todo!(),
+                AssignmentOperationExpression::Division { left, slash_equals, right } => todo!(),
+                AssignmentOperationExpression::Modulo { left, percent_equals, right } => todo!(),
+                AssignmentOperationExpression::Exponentiation { left, pow_equals, right } => todo!(),
+                AssignmentOperationExpression::Concat { left, dot_equals, right } => todo!(),
+                AssignmentOperationExpression::BitwiseAnd { left, ampersand_equals, right } => todo!(),
+                AssignmentOperationExpression::BitwiseOr { left, pipe_equals, right } => todo!(),
+                AssignmentOperationExpression::BitwiseXor { left, caret_equals, right } => todo!(),
+                AssignmentOperationExpression::LeftShift { left, left_shift_equals, right } => todo!(),
+                AssignmentOperationExpression::RightShift { left, right_shift_equals, right } => todo!(),
+                AssignmentOperationExpression::Coalesce { left, coalesce_equals, right } => todo!(),
+            }
+            Expression::BitwiseOperation(_) => todo!(),
+            Expression::RangeOperation(_) => todo!(),
+            Expression::Concat(_) => Type::String,
+            Expression::Instanceof(_) => Type::Bool,
+            Expression::Reference(ReferenceExpression { right, .. }) => self.get_type(right, definitions),
+            Expression::Identifier(_) => unreachable!(),
+            Expression::FunctionClosureCreation(_) => Type::Callable,
+            Expression::MethodCall(_) => todo!(),
+            Expression::MethodClosureCreation(_) => todo!(),
+            Expression::NullsafeMethodCall(_) => todo!(),
+            Expression::StaticMethodCall(_) => todo!(),
+            Expression::StaticVariableMethodCall(_) => todo!(),
+            Expression::StaticMethodClosureCreation(_) => todo!(),
+            Expression::StaticVariableMethodClosureCreation(_) => todo!(),
+            Expression::PropertyFetch(_) => todo!(),
+            Expression::NullsafePropertyFetch(_) => todo!(),
+            Expression::StaticPropertyFetch(_) => todo!(),
+            Expression::ConstantFetch(_) => Type::Mixed,
+            Expression::Static => unreachable!(),
+            Expression::Self_ => unreachable!(),
+            Expression::Parent => unreachable!(),
+            Expression::ShortArray(_) => Type::Array,
+            Expression::Array(_) => Type::Array,
+            Expression::List(_) => unreachable!(),
+            Expression::Closure(ClosureExpression { return_type, .. }) => return_type.as_ref().map(|t| Type::from(&t.data_type)).unwrap_or(Type::Mixed),
+            Expression::ArrowFunction(ArrowFunctionExpression { return_type, .. }) => return_type.as_ref().map(|t| Type::from(&t.data_type)).unwrap_or(Type::Mixed),
+            Expression::InterpolatedString(_) => Type::String,
+            Expression::Heredoc(_) => Type::String,
+            Expression::Nowdoc(_) => Type::String,
+            Expression::ShellExec(_) => Type::String,
+            Expression::AnonymousClass(_) => unreachable!(),
+            // TODO: Make this more accurate once we have a better knowledge of
+            //       the values stored inside of an array.
+            Expression::ArrayIndex(_) => Type::Mixed,
+            Expression::MagicConstant(constant) => match constant {
+                MagicConstantExpression::Directory(_) => Type::String,
+                MagicConstantExpression::File(_) => Type::String,
+                MagicConstantExpression::Line(_) => Type::Int,
+                MagicConstantExpression::Class(_) => Type::String,
+                MagicConstantExpression::Function(_) => Type::String,
+                MagicConstantExpression::Method(_) => Type::String,
+                MagicConstantExpression::Namespace(_) => Type::String,
+                MagicConstantExpression::Trait(_) => Type::String,
+                MagicConstantExpression::CompilerHaltOffset(_) => Type::Int,
+            },
+            Expression::ShortTernary(_) => todo!(),
+            Expression::Ternary(_) => todo!(),
+            Expression::Coalesce(_) => todo!(),
+            Expression::Clone(CloneExpression { target }) => self.get_type(target.as_ref(), definitions),
+            Expression::Match(MatchExpression { default, arms, .. }) => {
+                let mut types = vec![];
+
+                for arm in arms.iter() {
+                    types.push(self.get_type(match &arm.body {
+                        MatchArmBody::Block { statements, .. } => todo!(),
+                        MatchArmBody::Expression { expression } => &expression,
+                    }, definitions));
+                }
+
+                if let Some(default) = default {
+                    types.push(self.get_type(match &default.as_ref().body {
+                        MatchArmBody::Block { statements, .. } => todo!(),
+                        MatchArmBody::Expression { expression } => &expression,
+                    }, definitions));
+                }
+
+                Type::Union(types)
+            },
+            Expression::ShortMatch(ShortMatchExpression { default, arms, .. }) => {
+                let mut types = vec![];
+
+                for arm in arms.iter() {
+                    types.push(self.get_type(match &arm.body {
+                        MatchArmBody::Block { statements, .. } => todo!(),
+                        MatchArmBody::Expression { expression } => &expression,
+                    }, definitions));
+                }
+
+                if let Some(default) = default {
+                    types.push(self.get_type(match &default.as_ref().body {
+                        MatchArmBody::Block { statements, .. } => todo!(),
+                        MatchArmBody::Expression { expression } => &expression,
+                    }, definitions));
+                }
+
+                Type::Union(types)
+            },
+            Expression::Throw(_) => Type::Never,
+            Expression::Yield(_) => todo!(),
+            Expression::YieldFrom(_) => todo!(),
+            Expression::Cast(CastExpression { kind, value, .. }) => match (kind, self.get_type(value, definitions)) {
+                _ => todo!(),
+            },
+            Expression::Noop => todo!(),
         }
     }
 
