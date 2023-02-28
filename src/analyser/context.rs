@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use pxp_parser::{lexer::byte_string::ByteString, parser::ast::{Expression, literals::Literal, variables::{Variable, SimpleVariable}, FunctionCallExpression, identifiers::{Identifier, SimpleIdentifier}, NewExpression}};
+use pxp_parser::{lexer::byte_string::ByteString, parser::ast::{Expression, literals::Literal, variables::{Variable, SimpleVariable}, FunctionCallExpression, identifiers::{Identifier, SimpleIdentifier}, NewExpression, operators::ArithmeticOperationExpression}};
 use crate::{shared::types::Type, definitions::collection::DefinitionCollection};
 
 #[derive(Debug, Clone)]
@@ -83,6 +83,73 @@ impl Context {
                         Type::Named(class.name.clone())
                     },
                     _ => Type::Object,
+                }
+            },
+            Expression::ArithmeticOperation(operation) => match operation {
+                ArithmeticOperationExpression::Addition { left, right, .. } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
+                    (Type::Float, Type::Int | Type::Float) => Type::Float,
+                    (Type::Int, Type::Float) => Type::Float,
+                    (Type::Int, Type::Int) => Type::Int,
+                    (Type::Array, Type::Array) => Type::Array,
+                    _ => Type::Error,
+                },
+                ArithmeticOperationExpression::Subtraction { left, right, .. } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
+                    (Type::Float, Type::Int | Type::Float) => Type::Float,
+                    (Type::Int, Type::Float) => Type::Float,
+                    (Type::Int, Type::Int) => Type::Int,
+                    _ => Type::Error,
+                },
+                ArithmeticOperationExpression::Multiplication { left, right, .. } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
+                    (Type::Float, Type::Int | Type::Float) => Type::Float,
+                    (Type::Int, Type::Float) => Type::Float,
+                    (Type::Int, Type::Int) => Type::Int,
+                    _ => Type::Error,
+                },
+                ArithmeticOperationExpression::Division { left, right, .. } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
+                    (Type::Float | Type::Int, Type::Int | Type::Float) => Type::Union(vec![Type::Float, Type::Int]),
+                    _ => Type::Error,
+                },
+                ArithmeticOperationExpression::Modulo { left, percent, right } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
+                    (Type::Float | Type::Int, Type::Int | Type::Float) => Type::Int,
+                    _ => Type::Error,
+                },
+                ArithmeticOperationExpression::Exponentiation { left, pow, right } => match (self.get_type(left.as_ref(), definitions), self.get_type(right.as_ref(), definitions)) {
+                    (Type::Float | Type::Int, Type::Int | Type::Float) => Type::Union(vec![Type::Float, Type::Int]),
+                    _ => Type::Error,
+                },
+                ArithmeticOperationExpression::Negative { minus, right } => match self.get_type(right.as_ref(), definitions) {
+                    Type::Float => Type::Float,
+                    Type::Int => Type::Int,
+                    _ => Type::Error,
+                },
+                ArithmeticOperationExpression::Positive { plus, right } => match self.get_type(right.as_ref(), definitions) {
+                    Type::Float => Type::Float,
+                    Type::Int => Type::Int,
+                    _ => Type::Error,
+                }
+                ArithmeticOperationExpression::PreIncrement { increment, right } => match self.get_type(right.as_ref(), definitions) {
+                    Type::Float => Type::Float,
+                    Type::Int => Type::Int,
+                    Type::String => Type::String,
+                    _ => Type::Error,
+                }
+                ArithmeticOperationExpression::PostIncrement { left, increment } => match self.get_type(left.as_ref(), definitions) {
+                    Type::Float => Type::Float,
+                    Type::Int => Type::Int,
+                    Type::String => Type::String,
+                    _ => Type::Error,
+                }
+                ArithmeticOperationExpression::PreDecrement { decrement, right } => match self.get_type(right.as_ref(), definitions) {
+                    Type::Float => Type::Float,
+                    Type::Int => Type::Int,
+                    Type::String => Type::String,
+                    _ => Type::Error,
+                }
+                ArithmeticOperationExpression::PostDecrement { left, decrement } => match self.get_type(left.as_ref(), definitions) {
+                    Type::Float => Type::Float,
+                    Type::Int => Type::Int,
+                    Type::String => Type::String,
+                    _ => Type::Error,
                 }
             },
             _ => Type::Mixed,

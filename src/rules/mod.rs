@@ -13,6 +13,7 @@ pub mod valid_assignment;
 pub mod abstract_method_in_non_abstract_class;
 pub mod call_private_through_static;
 pub mod function_definition;
+pub mod valid_arithmetic_operation;
 
 pub trait Rule: Debug {
     fn should_run(&self, node: &dyn Node) -> bool;

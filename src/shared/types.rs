@@ -26,6 +26,7 @@ pub enum Type {
     Union(Vec<Self>),
     Intersection(Vec<Self>),
     Never,
+    Error,
 }
 
 impl Type {
@@ -58,6 +59,7 @@ impl Type {
             Type::Union(ty) => ty.iter().any(|ty| ty.compatible(other)),
             Type::Intersection(ty) => ty.iter().all(|ty| ty.compatible(other)),
             Type::Never => false,
+            Type::Error => unreachable!(),
         }
     }
 }
@@ -86,6 +88,7 @@ impl Display for Type {
             Type::Union(tys) => write!(f, "{}", tys.iter().map(|ty| ty.to_string()).collect::<Vec<String>>().join("|")),
             Type::Intersection(tys) => write!(f, "{}", tys.iter().map(|ty| ty.to_string()).collect::<Vec<String>>().join("&")),
             Type::Never => write!(f, "never"),
+            Type::Error => write!(f, "<internal:error>"),
         }
     }
 }
