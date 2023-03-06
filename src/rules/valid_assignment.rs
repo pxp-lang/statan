@@ -1,6 +1,18 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{operators::AssignmentOperationExpression, Expression, variables::{Variable, SimpleVariable}}};
+use pxp_parser::{
+    downcast::downcast,
+    node::Node,
+    parser::ast::{
+        operators::AssignmentOperationExpression,
+        variables::{SimpleVariable, Variable},
+        Expression,
+    },
+};
 
-use crate::{definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}, shared::types::Type};
+use crate::{
+    analyser::{context::Context, messages::MessageCollector},
+    definitions::collection::DefinitionCollection,
+    shared::types::Type,
+};
 
 use super::Rule;
 
@@ -12,12 +24,19 @@ impl Rule for ValidAssignmentRule {
         downcast::<AssignmentOperationExpression>(node).is_some()
     }
 
-    fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
-        let assignment_operation_expression = downcast::<AssignmentOperationExpression>(node).unwrap();
+    fn run(
+        &mut self,
+        node: &mut dyn Node,
+        definitions: &DefinitionCollection,
+        messages: &mut MessageCollector,
+        context: &mut Context,
+    ) {
+        let assignment_operation_expression =
+            downcast::<AssignmentOperationExpression>(node).unwrap();
 
         // 1. Check that we're doing a plain assignment.
         match assignment_operation_expression {
-            AssignmentOperationExpression::Assign { .. } => {},
+            AssignmentOperationExpression::Assign { .. } => {}
             _ => return,
         }
 
@@ -33,7 +52,10 @@ impl Rule for ValidAssignmentRule {
 
         // 4. If the type of the right-hand side if `void` (null), we should warn.
         if value_type == Type::Void {
-            messages.error(format!("Assignment of void to variable {variable_name}"), assignment_operation_expression.operator().line);
+            messages.error(
+                format!("Assignment of void to variable {variable_name}"),
+                assignment_operation_expression.operator().line,
+            );
         }
 
         // 4. Enter the new variable type into the context.

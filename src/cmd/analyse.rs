@@ -1,9 +1,9 @@
-use std::fs::{read, metadata};
+use std::fs::{metadata, read};
 
-use indicatif::ProgressBar;
-use prettytable::{Table, row};
-use statan::{analyser::Analyser, definitions::collector::DefinitionCollector, rules};
 use colored::*;
+use indicatif::ProgressBar;
+use prettytable::{row, Table};
+use statan::{analyser::Analyser, definitions::collector::DefinitionCollector, rules};
 
 use crate::AnalyseCommand;
 
@@ -38,10 +38,16 @@ pub fn run(args: AnalyseCommand) {
     analyser.add_rule(Box::new(rules::valid_class::ValidClassRule));
     analyser.add_rule(Box::new(rules::valid_static_call::ValidStaticCallRule));
     analyser.add_rule(Box::new(rules::valid_this_call::ValidThisCallRule));
-    analyser.add_rule(Box::new(rules::abstract_method_in_non_abstract_class::AbstractMethodInNonAbstractClassRule));
-    analyser.add_rule(Box::new(rules::call_private_through_static::CallPrivateThroughStaticRule));
+    analyser.add_rule(Box::new(
+        rules::abstract_method_in_non_abstract_class::AbstractMethodInNonAbstractClassRule,
+    ));
+    analyser.add_rule(Box::new(
+        rules::call_private_through_static::CallPrivateThroughStaticRule,
+    ));
     analyser.add_rule(Box::new(rules::function_definition::FunctionDefinitionRule));
-    analyser.add_rule(Box::new(rules::valid_arithmetic_operation::ValidArithmeticOperationRule));
+    analyser.add_rule(Box::new(
+        rules::valid_arithmetic_operation::ValidArithmeticOperationRule,
+    ));
 
     let mut message_collections = Vec::new();
     let metadata = metadata(&args.file).unwrap();

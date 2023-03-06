@@ -1,6 +1,16 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{StaticMethodCallExpression, Expression, identifiers::{Identifier, SimpleIdentifier}}};
+use pxp_parser::{
+    downcast::downcast,
+    node::Node,
+    parser::ast::{
+        identifiers::{Identifier, SimpleIdentifier},
+        Expression, StaticMethodCallExpression,
+    },
+};
 
-use crate::{definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}};
+use crate::{
+    analyser::{context::Context, messages::MessageCollector},
+    definitions::collection::DefinitionCollection,
+};
 
 use super::Rule;
 
@@ -12,8 +22,14 @@ impl Rule for CallPrivateThroughStaticRule {
         downcast::<StaticMethodCallExpression>(node).is_some()
     }
 
-    fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
-        if ! context.is_in_class() {
+    fn run(
+        &mut self,
+        node: &mut dyn Node,
+        definitions: &DefinitionCollection,
+        messages: &mut MessageCollector,
+        context: &mut Context,
+    ) {
+        if !context.is_in_class() {
             return;
         }
 
@@ -47,10 +63,12 @@ impl Rule for CallPrivateThroughStaticRule {
             return;
         }
 
-        messages.error(format!(
-            "Unsafe call to private method {}::{}() on static::",
-            current_class.name,
-            method_name,
-        ), span.line);
+        messages.error(
+            format!(
+                "Unsafe call to private method {}::{}() on static::",
+                current_class.name, method_name,
+            ),
+            span.line,
+        );
     }
 }

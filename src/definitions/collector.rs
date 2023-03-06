@@ -97,7 +97,9 @@ impl DefinitionCollector {
             ParsedType::Mixed(_) => Type::Mixed,
             ParsedType::Void(_) => Type::Void,
             ParsedType::Object(_) => Type::Object,
-            ParsedType::Nullable(_, data_type) => Type::Nullable(Box::new(self.map_type(Some(data_type)).unwrap())),
+            ParsedType::Nullable(_, data_type) => {
+                Type::Nullable(Box::new(self.map_type(Some(data_type)).unwrap()))
+            }
             ParsedType::Union(data_types) => {
                 let mut types = Vec::new();
 
@@ -106,7 +108,7 @@ impl DefinitionCollector {
                 }
 
                 Type::Union(types)
-            },
+            }
             ParsedType::False(_) => Type::False,
             ParsedType::True(_) => Type::True,
             ParsedType::Null(_) => Type::Null,
@@ -121,7 +123,7 @@ impl DefinitionCollector {
                 }
 
                 Type::Intersection(types)
-            },
+            }
             ParsedType::SelfReference(_) => Type::Self_,
             ParsedType::ParentReference(_) => Type::Parent,
             ParsedType::Never(_) => Type::Never,

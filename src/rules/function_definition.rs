@@ -1,6 +1,13 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{functions::FunctionStatement, data_type::Type as ParsedType, Expression}};
+use pxp_parser::{
+    downcast::downcast,
+    node::Node,
+    parser::ast::{data_type::Type as ParsedType, functions::FunctionStatement, Expression},
+};
 
-use crate::{definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}};
+use crate::{
+    analyser::{context::Context, messages::MessageCollector},
+    definitions::collection::DefinitionCollection,
+};
 
 use super::Rule;
 
@@ -12,32 +19,50 @@ impl Rule for FunctionDefinitionRule {
         downcast::<FunctionStatement>(node).is_some()
     }
 
-    fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
+    fn run(
+        &mut self,
+        node: &mut dyn Node,
+        definitions: &DefinitionCollection,
+        messages: &mut MessageCollector,
+        context: &mut Context,
+    ) {
         let function_statement = downcast::<FunctionStatement>(node).unwrap();
 
         for parameter in function_statement.parameters.iter() {
             // TODO: Validate the type of the parameter.
             match &parameter.data_type {
                 Some(ty) => match ty {
-                    ParsedType::Void(span) => messages.warning(format!("Parameter {} has invalid type void.", parameter.name), span.line),
-                    ParsedType::Never(span) => messages.warning(format!("Parameter {} has invalid type never.", parameter.name), span.line),
-                    _ => {},
+                    ParsedType::Void(span) => messages.warning(
+                        format!("Parameter {} has invalid type void.", parameter.name),
+                        span.line,
+                    ),
+                    ParsedType::Never(span) => messages.warning(
+                        format!("Parameter {} has invalid type never.", parameter.name),
+                        span.line,
+                    ),
+                    _ => {}
                 },
                 None => {
-                    messages.warning(format!("Parameter {} has no type.", parameter.name), parameter.name.span.line);
+                    messages.warning(
+                        format!("Parameter {} has no type.", parameter.name),
+                        parameter.name.span.line,
+                    );
                     continue;
-                },
+                }
             };
-            
+
             if let Some(Expression::Null) = parameter.default {
-                if ! type_is_nullable(parameter.data_type.as_ref().unwrap()) {
+                if !type_is_nullable(parameter.data_type.as_ref().unwrap()) {
                     messages.warning(format!("Parameter {} has a default value of null, but does not have a nullable type.", parameter.name), parameter.name.span.line);
                 }
             }
         }
 
         if function_statement.return_type.is_none() {
-            messages.warning(format!("Function {} has no return type.", function_statement.name), function_statement.name.span.line);
+            messages.warning(
+                format!("Function {} has no return type.", function_statement.name),
+                function_statement.name.span.line,
+            );
         }
     }
 }

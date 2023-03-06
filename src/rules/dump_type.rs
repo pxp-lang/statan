@@ -1,6 +1,15 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{FunctionCallExpression, identifiers::Identifier, Expression, arguments::Argument}};
+use pxp_parser::{
+    downcast::downcast,
+    node::Node,
+    parser::ast::{
+        arguments::Argument, identifiers::Identifier, Expression, FunctionCallExpression,
+    },
+};
 
-use crate::{analyser::{context::Context, messages::MessageCollector}, definitions::collection::DefinitionCollection};
+use crate::{
+    analyser::{context::Context, messages::MessageCollector},
+    definitions::collection::DefinitionCollection,
+};
 
 use super::Rule;
 
@@ -12,11 +21,19 @@ impl Rule for DumpTypeRule {
         downcast::<FunctionCallExpression>(node).is_some()
     }
 
-    fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
+    fn run(
+        &mut self,
+        node: &mut dyn Node,
+        definitions: &DefinitionCollection,
+        messages: &mut MessageCollector,
+        context: &mut Context,
+    ) {
         let function_call_expression = downcast::<FunctionCallExpression>(node).unwrap();
 
         let function_name = match function_call_expression.target.as_ref() {
-            Expression::Identifier(Identifier::SimpleIdentifier(identifier)) => context.resolve_name(&identifier.value),
+            Expression::Identifier(Identifier::SimpleIdentifier(identifier)) => {
+                context.resolve_name(&identifier.value)
+            }
             _ => return,
         };
 
@@ -27,17 +44,26 @@ impl Rule for DumpTypeRule {
         let argument = match function_call_expression.arguments.arguments.first() {
             Some(Argument::Positional(argument)) => argument,
             Some(Argument::Named(_)) => {
-                messages.error("dumpType() does not support named arguments", function_call_expression.arguments.left_parenthesis.line);
+                messages.error(
+                    "dumpType() does not support named arguments",
+                    function_call_expression.arguments.left_parenthesis.line,
+                );
                 return;
-            },
+            }
             None => {
-                messages.error("dumpType() requires an argument", function_call_expression.arguments.left_parenthesis.line);
+                messages.error(
+                    "dumpType() requires an argument",
+                    function_call_expression.arguments.left_parenthesis.line,
+                );
                 return;
-            },
+            }
         };
 
         let ty = context.get_type(&argument.value, definitions);
 
-        messages.note(format!("Dumped type: {ty}"), function_call_expression.arguments.left_parenthesis.line);
+        messages.note(
+            format!("Dumped type: {ty}"),
+            function_call_expression.arguments.left_parenthesis.line,
+        );
     }
 }

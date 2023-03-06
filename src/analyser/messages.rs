@@ -1,4 +1,4 @@
-use std::{slice::Iter, fmt::Display};
+use std::{fmt::Display, slice::Iter};
 
 #[derive(Debug, Clone)]
 pub struct Message {

@@ -1,11 +1,24 @@
-use pxp_parser::{parse, traverser::Visitor, node::Node, parser::ast::{UseStatement, Use, GroupUseStatement, namespaces::{UnbracedNamespace, BracedNamespace}, identifiers::SimpleIdentifier, classes::ClassStatement, functions::FunctionStatement}, lexer::byte_string::ByteString, downcast::downcast};
+use pxp_parser::{
+    downcast::downcast,
+    lexer::byte_string::ByteString,
+    node::Node,
+    parse,
+    parser::ast::{
+        classes::ClassStatement,
+        functions::FunctionStatement,
+        identifiers::SimpleIdentifier,
+        namespaces::{BracedNamespace, UnbracedNamespace},
+        GroupUseStatement, Use, UseStatement,
+    },
+    traverser::Visitor,
+};
 
 use crate::{definitions::collection::DefinitionCollection, rules::Rule, shared::types::Type};
 
-use self::{messages::MessageCollector, context::Context};
+use self::{context::Context, messages::MessageCollector};
 
-pub mod messages;
 pub mod context;
+pub mod messages;
 
 #[derive(Debug)]
 pub struct Analyser {
@@ -57,10 +70,21 @@ impl Visitor<()> for Analyser {
             context.set_classish_context(&name.value);
             self.context_stack.push(context);
             did_push_context = true;
-        } else if let Some(FunctionStatement { name, parameters, .. }) = downcast(node) {
+        } else if let Some(FunctionStatement {
+            name, parameters, ..
+        }) = downcast(node)
+        {
             context.set_function_context(&name.value);
             for parameter in parameters.iter() {
-                context.set_variable(parameter.name.name.clone(), parameter.data_type.as_ref().map(|t| t.into()).unwrap_or(Type::Mixed).into());
+                context.set_variable(
+                    parameter.name.name.clone(),
+                    parameter
+                        .data_type
+                        .as_ref()
+                        .map(|t| t.into())
+                        .unwrap_or(Type::Mixed)
+                        .into(),
+                );
             }
             self.context_stack.push(context);
             did_push_context = true;
@@ -80,13 +104,21 @@ impl Visitor<()> for Analyser {
     fn visit(&mut self, node: &mut dyn Node) -> Result<(), ()> {
         let context = self.context_stack.last_mut().unwrap();
 
-        if let Some(BracedNamespace { name: Some(SimpleIdentifier { value, .. }), .. }) = downcast::<BracedNamespace>(node) {
+        if let Some(BracedNamespace {
+            name: Some(SimpleIdentifier { value, .. }),
+            ..
+        }) = downcast::<BracedNamespace>(node)
+        {
             let mut namespace = ByteString::from(b"\\");
             namespace.extend(&value.bytes);
             context.set_namespace(namespace);
         }
 
-        if let Some(UnbracedNamespace { name: SimpleIdentifier { value, .. }, .. }) = downcast::<UnbracedNamespace>(node) {
+        if let Some(UnbracedNamespace {
+            name: SimpleIdentifier { value, .. },
+            ..
+        }) = downcast::<UnbracedNamespace>(node)
+        {
             let mut namespace = ByteString::from(b"\\");
             namespace.extend(&value.bytes);
             context.set_namespace(namespace);
@@ -112,7 +144,12 @@ impl Visitor<()> for Analyser {
 
         for rule in &mut self.rules {
             if rule.should_run(node) {
-                rule.run(node, &self.definitions, &mut self.message_collector, context);
+                rule.run(
+                    node,
+                    &self.definitions,
+                    &mut self.message_collector,
+                    context,
+                );
             }
         }
 

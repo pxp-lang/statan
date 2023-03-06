@@ -1,5 +1,5 @@
 use pxp_parser::lexer::byte_string::ByteString;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::{constants::ConstantDefinition, functions::MethodDefinition};
 

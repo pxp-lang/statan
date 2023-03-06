@@ -1,6 +1,18 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{Expression, identifiers::{Identifier, SimpleIdentifier}, NewExpression}, lexer::byte_string::ByteString};
+use pxp_parser::{
+    downcast::downcast,
+    lexer::byte_string::ByteString,
+    node::Node,
+    parser::ast::{
+        identifiers::{Identifier, SimpleIdentifier},
+        Expression, NewExpression,
+    },
+};
 
-use crate::{rules::Rule, definitions::collection::DefinitionCollection, analyser::{messages::{MessageCollector}, context::Context}};
+use crate::{
+    analyser::{context::Context, messages::MessageCollector},
+    definitions::collection::DefinitionCollection,
+    rules::Rule,
+};
 
 #[derive(Debug)]
 pub struct ValidClassRule;
@@ -10,11 +22,20 @@ impl Rule for ValidClassRule {
         downcast::<NewExpression>(node).is_some()
     }
 
-    fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
+    fn run(
+        &mut self,
+        node: &mut dyn Node,
+        definitions: &DefinitionCollection,
+        messages: &mut MessageCollector,
+        context: &mut Context,
+    ) {
         let new_expression = downcast::<NewExpression>(node).unwrap();
 
         let (name, span) = match new_expression.target.as_ref() {
-            Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier { value: class_name, span })) => (class_name, span),
+            Expression::Identifier(Identifier::SimpleIdentifier(SimpleIdentifier {
+                value: class_name,
+                span,
+            })) => (class_name, span),
             _ => return,
         };
 
@@ -22,12 +43,20 @@ impl Rule for ValidClassRule {
 
         if definition.is_none() {
             // TODO: Add a check for execution inside of a `class_exists` call.
-            messages.error(format!("Class `{}` (DBG: {}, {}) not found", name, context.resolve_name(name), {
-                let mut global_name = ByteString::default();
-                global_name.extend(b"\\");
-                global_name.extend(&name.bytes);
-                global_name
-            }), span.line);
+            messages.error(
+                format!(
+                    "Class `{}` (DBG: {}, {}) not found",
+                    name,
+                    context.resolve_name(name),
+                    {
+                        let mut global_name = ByteString::default();
+                        global_name.extend(b"\\");
+                        global_name.extend(&name.bytes);
+                        global_name
+                    }
+                ),
+                span.line,
+            );
 
             return;
         }
@@ -35,7 +64,10 @@ impl Rule for ValidClassRule {
         let definition = definition.unwrap();
 
         if definition.is_abstract() {
-            messages.error(format!("Cannot instantiate abstract class `{name}`"), span.line);
+            messages.error(
+                format!("Cannot instantiate abstract class `{name}`"),
+                span.line,
+            );
         }
     }
 }

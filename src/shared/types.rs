@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 
 use pxp_parser::{lexer::byte_string::ByteString, parser::ast::data_type::Type as ParsedType};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Type {
@@ -41,7 +41,9 @@ impl From<ParsedType> for Type {
             ParsedType::Named(_, t) => Self::Named(t),
             ParsedType::Nullable(_, t) => Self::Nullable(Box::new(t.as_ref().into())),
             ParsedType::Union(tys) => Self::Union(tys.into_iter().map(|t| t.into()).collect()),
-            ParsedType::Intersection(tys) => Self::Intersection(tys.into_iter().map(|t| t.into()).collect()),
+            ParsedType::Intersection(tys) => {
+                Self::Intersection(tys.into_iter().map(|t| t.into()).collect())
+            }
             ParsedType::Void(_) => Self::Void,
             ParsedType::Null(_) => Self::Null,
             ParsedType::True(_) => Self::True,
@@ -68,7 +70,7 @@ impl Type {
         if other == &Type::Mixed {
             return true;
         }
-        
+
         match self {
             Type::String => other == &Type::String,
             Type::Int => other == &Type::Int,
@@ -118,9 +120,23 @@ impl Display for Type {
             Type::Parent => write!(f, "parent"),
             Type::Iterable => write!(f, "iterable"),
             Type::Nullable(ty) => write!(f, "?{ty}"),
-            Type::Named(ty) => write!(f, "{ty}", ),
-            Type::Union(tys) => write!(f, "{}", tys.iter().map(|ty| ty.to_string()).collect::<Vec<String>>().join("|")),
-            Type::Intersection(tys) => write!(f, "{}", tys.iter().map(|ty| ty.to_string()).collect::<Vec<String>>().join("&")),
+            Type::Named(ty) => write!(f, "{ty}",),
+            Type::Union(tys) => write!(
+                f,
+                "{}",
+                tys.iter()
+                    .map(|ty| ty.to_string())
+                    .collect::<Vec<String>>()
+                    .join("|")
+            ),
+            Type::Intersection(tys) => write!(
+                f,
+                "{}",
+                tys.iter()
+                    .map(|ty| ty.to_string())
+                    .collect::<Vec<String>>()
+                    .join("&")
+            ),
             Type::Never => write!(f, "never"),
             Type::Error => write!(f, "<internal:error>"),
         }

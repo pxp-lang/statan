@@ -1,5 +1,5 @@
 use pxp_parser::lexer::byte_string::ByteString;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::shared::{modifier::Modifier, types::Type, visibility::Visibility};
 
@@ -18,7 +18,10 @@ impl FunctionDefinition {
     }
 
     pub fn min_arity(&self) -> usize {
-        self.parameters.iter().take_while(|p| !p.optional && !p.spread).count()
+        self.parameters
+            .iter()
+            .take_while(|p| !p.optional && !p.spread)
+            .count()
     }
 
     pub fn max_arity(&self) -> usize {
@@ -40,7 +43,7 @@ impl FunctionDefinition {
     pub fn get_parameter_by_name(&self, name: &ByteString) -> Option<&Parameter> {
         let mut name = name.clone();
 
-        if ! name.starts_with(&[b'$']) {
+        if !name.starts_with(&[b'$']) {
             name.bytes.insert(0, b'$');
         }
 
@@ -79,7 +82,10 @@ impl MethodDefinition {
     }
 
     pub fn min_arity(&self) -> usize {
-        self.parameters.iter().take_while(|p| !p.optional && !p.spread).count()
+        self.parameters
+            .iter()
+            .take_while(|p| !p.optional && !p.spread)
+            .count()
     }
 
     pub fn max_arity(&self) -> usize {
@@ -101,7 +107,7 @@ impl MethodDefinition {
     pub fn get_parameter_by_name(&self, name: &ByteString) -> Option<&Parameter> {
         let mut name = name.clone();
 
-        if ! name.starts_with(&[b'$']) {
+        if !name.starts_with(&[b'$']) {
             name.bytes.insert(0, b'$');
         }
 

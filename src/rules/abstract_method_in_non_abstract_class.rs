@@ -1,6 +1,13 @@
-use pxp_parser::{node::Node, downcast::downcast, parser::ast::{classes::ClassMember, functions::AbstractMethod}};
+use pxp_parser::{
+    downcast::downcast,
+    node::Node,
+    parser::ast::{classes::ClassMember, functions::AbstractMethod},
+};
 
-use crate::{definitions::collection::DefinitionCollection, analyser::{messages::MessageCollector, context::Context}};
+use crate::{
+    analyser::{context::Context, messages::MessageCollector},
+    definitions::collection::DefinitionCollection,
+};
 
 use super::Rule;
 
@@ -15,8 +22,14 @@ impl Rule for AbstractMethodInNonAbstractClassRule {
         }
     }
 
-    fn run(&mut self, node: &mut dyn Node, definitions: &DefinitionCollection, messages: &mut MessageCollector, context: &mut Context) {
-        if ! context.is_in_class() {
+    fn run(
+        &mut self,
+        node: &mut dyn Node,
+        definitions: &DefinitionCollection,
+        messages: &mut MessageCollector,
+        context: &mut Context,
+    ) {
+        if !context.is_in_class() {
             unreachable!();
         }
 
@@ -28,7 +41,12 @@ impl Rule for AbstractMethodInNonAbstractClassRule {
         }
 
         let (method_definition, span) = match downcast::<ClassMember>(node).unwrap() {
-            ClassMember::AbstractMethod(AbstractMethod { name, .. }) => (current_class.get_method(&name.value, definitions, context).unwrap(), name.span),
+            ClassMember::AbstractMethod(AbstractMethod { name, .. }) => (
+                current_class
+                    .get_method(&name.value, definitions, context)
+                    .unwrap(),
+                name.span,
+            ),
             _ => unreachable!(),
         };
 
@@ -36,6 +54,12 @@ impl Rule for AbstractMethodInNonAbstractClassRule {
             return;
         }
 
-        messages.error(format!("Non-abstract class {} contains abstract method {}", current_class.name, method_definition.name), span.line);
+        messages.error(
+            format!(
+                "Non-abstract class {} contains abstract method {}",
+                current_class.name, method_definition.name
+            ),
+            span.line,
+        );
     }
 }

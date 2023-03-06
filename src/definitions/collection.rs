@@ -1,5 +1,5 @@
 use pxp_parser::lexer::byte_string::ByteString;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::analyser::context::Context;
 
@@ -48,48 +48,54 @@ impl DefinitionCollection {
         self.enums.push(enum_);
     }
 
-    pub fn get_function(&self, name: &ByteString, context: &Context) -> Option<&FunctionDefinition> {
+    pub fn get_function(
+        &self,
+        name: &ByteString,
+        context: &Context,
+    ) -> Option<&FunctionDefinition> {
         let resolved_name = context.resolve_name(name);
-        
-        self.functions.iter()
+
+        self.functions
+            .iter()
             .find(|function| function.name == resolved_name)
             .or_else(|| {
                 let mut global_name = ByteString::default();
                 global_name.extend(b"\\");
                 global_name.extend(&name.bytes);
 
-                self.functions.iter()
+                self.functions
+                    .iter()
                     .find(|function| function.name == global_name)
             })
     }
 
     pub fn get_class(&self, name: &ByteString, context: &Context) -> Option<&ClassDefinition> {
         let resolved_name = context.resolve_name(name);
-        
-        self.classes.iter()
+
+        self.classes
+            .iter()
             .find(|class| class.name == resolved_name)
             .or_else(|| {
                 let mut global_name = ByteString::default();
                 global_name.extend(b"\\");
                 global_name.extend(&name.bytes);
 
-                self.classes.iter()
-                    .find(|class| class.name == global_name)
+                self.classes.iter().find(|class| class.name == global_name)
             })
     }
 
     pub fn get_trait(&self, name: &ByteString, context: &Context) -> Option<&TraitDefinition> {
         let resolved_name = context.resolve_name(name);
-        
-        self.traits.iter()
+
+        self.traits
+            .iter()
             .find(|trait_| trait_.name == resolved_name)
             .or_else(|| {
                 let mut global_name = ByteString::default();
                 global_name.extend(b"\\");
                 global_name.extend(&name.bytes);
 
-                self.traits.iter()
-                    .find(|trait_| trait_.name == global_name)
+                self.traits.iter().find(|trait_| trait_.name == global_name)
             })
     }
 }
