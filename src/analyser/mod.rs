@@ -1,6 +1,6 @@
-use pxp_parser::{parse, traverser::Visitor, node::Node, parser::ast::{UseStatement, Use, GroupUseStatement, namespaces::{UnbracedNamespace, BracedNamespace}, identifiers::SimpleIdentifier, classes::ClassStatement}, lexer::byte_string::ByteString, downcast::downcast};
+use pxp_parser::{parse, traverser::Visitor, node::Node, parser::ast::{UseStatement, Use, GroupUseStatement, namespaces::{UnbracedNamespace, BracedNamespace}, identifiers::SimpleIdentifier, classes::ClassStatement, functions::FunctionStatement}, lexer::byte_string::ByteString, downcast::downcast};
 
-use crate::{definitions::collection::DefinitionCollection, rules::Rule};
+use crate::{definitions::collection::DefinitionCollection, rules::Rule, shared::types::Type};
 
 use self::{messages::MessageCollector, context::Context};
 
@@ -55,6 +55,13 @@ impl Visitor<()> for Analyser {
 
         if let Some(ClassStatement { name, .. }) = downcast(node) {
             context.set_classish_context(&name.value);
+            self.context_stack.push(context);
+            did_push_context = true;
+        } else if let Some(FunctionStatement { name, parameters, .. }) = downcast(node) {
+            context.set_function_context(&name.value);
+            for parameter in parameters.iter() {
+                context.set_variable(parameter.name.name.clone(), parameter.data_type.as_ref().map(|t| t.into()).unwrap_or(Type::Mixed).into());
+            }
             self.context_stack.push(context);
             did_push_context = true;
         }

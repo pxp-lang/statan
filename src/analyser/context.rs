@@ -9,6 +9,7 @@ pub struct Context {
     imports: Vec<ByteString>,
     variables: HashMap<ByteString, Type>,
     classish_context: Option<ByteString>,
+    function_context: Option<ByteString>,
 }
 
 impl Context {
@@ -18,6 +19,7 @@ impl Context {
             imports: Vec::new(),
             variables: HashMap::new(),
             classish_context: None,
+            function_context: None,
         }
     }
 
@@ -35,7 +37,20 @@ impl Context {
             imports: self.imports.clone(),
             variables: HashMap::new(),
             classish_context: self.classish_context.clone(),
+            function_context: self.function_context.clone(),
         }
+    }
+
+    pub fn set_function_context(&mut self, name: &ByteString) {
+        self.function_context = Some(name.clone());
+    }
+
+    pub fn is_in_function(&self) -> bool {
+        self.function_context.is_some()
+    }
+
+    pub fn function_context(&self) -> &ByteString {
+        self.function_context.as_ref().unwrap()
     }
 
     pub fn set_classish_context(&mut self, name: &ByteString) {
